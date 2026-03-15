@@ -1,0 +1,25 @@
+:root {
+  --color-text: #111;
+  --color-text-muted: #666;
+  --color-bg: #fff;
+  --color-border: #e5e4e7;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #f3f4f6;
+    --color-text-muted: #9ca3af;
+    --color-bg: #16171d;
+  }
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
