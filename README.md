@@ -1,19 +1,19 @@
 # Battlefront Balancer
 
-En nettside for å gjøre Star Wars Battlefront 2015 mer konkurransedyktig med rangert spill og rating for balanserte kamper.
+A web app for making Star Wars Battlefront 2015 more competitive with ranked play and ratings for balanced matches.
 
-## Teknologier
+## Tech stack
 
 - **Backend:** Kotlin, Spring Boot 4, JPA. Gradle (Kotlin DSL), JDK 25.
 - **Frontend:** React 18, TypeScript, Vite, SCSS. npm.
 - **Database:** PostgreSQL 16.
-- **Deploy/utvikling:** Docker og docker-compose.
+- **Deploy / development:** Docker and docker-compose.
 
-## Kom i gang
+## Getting started
 
-### Utvikling (backend og frontend på host)
+### Development (backend and frontend on host)
 
-1. **Start kun Postgres**
+1. **Start Postgres only**
    ```bash
    docker compose -f docker-compose.dev.yml up -d
    ```
@@ -22,27 +22,27 @@ En nettside for å gjøre Star Wars Battlefront 2015 mer konkurransedyktig med r
    ```bash
    ./gradlew :backend:bootRun
    ```
-   Backend kjører på http://localhost:8080.
+   Backend runs at http://localhost:8080.
 
 3. **Start frontend**
    ```bash
    cd frontend && npm run dev
    ```
-   Frontend kjører på http://localhost:5173 og proxyer `/api` til backend.
+   Frontend runs at http://localhost:5173 and proxies `/api` to the backend.
 
-### Alt med Docker
+### Full stack with Docker
 
 ```bash
 docker compose up -d
 ```
 
 - Frontend: http://localhost (port 80)
-- Backend API: http://localhost/api (via nginx) eller http://localhost:8080
-- Postgres: localhost:5432 (bruker `battlefront` / passord `battlefront`, database `battlefront_balancer`)
+- Backend API: http://localhost/api (via nginx) or http://localhost:8080
+- Postgres: localhost:5432 (user `battlefront`, password `battlefront`, database `battlefront_balancer`)
 
-Stopp: `docker compose down`.
+Stop: `docker compose down`.
 
-## Prosjektstruktur
+## Project structure
 
 ```
 ├── backend/          # Spring Boot (Kotlin)
@@ -65,13 +65,13 @@ Stopp: `docker compose down`.
 ├── docker/
 │   └── postgres/init.sql
 ├── docker-compose.yml      # Full stack
-└── docker-compose.dev.yml  # Kun Postgres
+└── docker-compose.dev.yml  # Postgres only
 ```
 
-## Porter
+## Ports
 
-| Tjeneste | Utvikling | Docker |
-|----------|-----------|--------|
-| Frontend | 5173      | 80     |
-| Backend  | 8080      | 8080   |
-| Postgres | 5432      | 5432   |
+| Service   | Development | Docker |
+|----------|-------------|--------|
+| Frontend | 5173        | 80     |
+| Backend  | 8080        | 8080   |
+| Postgres | 5432        | 5432   |
