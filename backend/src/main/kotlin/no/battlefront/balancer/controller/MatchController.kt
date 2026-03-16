@@ -15,15 +15,19 @@ import org.springframework.web.bind.annotation.RestController
 class MatchController(private val matchService: MatchService) {
 
     /**
-     * GET /api/last-match – spillere som deltok i siste match (med sesongstat).
-     * Tilsvarer api_lastMatch.php.
+     * Returns the players who participated in the most recent match, with their current season stats.
+     *
+     * @return [ResponseEntity] containing a list of [LastMatchPlayerDto]; empty if no match exists.
      */
     @GetMapping("/last-match")
     fun getPlayersInLastMatch(): ResponseEntity<List<LastMatchPlayerDto>> =
         ResponseEntity.ok(matchService.getPlayersInLastMatch())
 
     /**
-     * POST /api/matches – lagre match + stats og oppdater sesongstat (tilsvarer matchSubmit.php).
+     * Persists a match, per-player stats, and updates season stats for all participants.
+     *
+     * @param request the match payload (matchData, rebels, imperials; see [MatchSubmitRequest]).
+     * @return [ResponseEntity] with success/error message and status 200, 400, or 500.
      */
     @PostMapping("/matches")
     fun submitMatch(@RequestBody request: MatchSubmitRequest): ResponseEntity<Map<String, Any>> {

@@ -1,7 +1,11 @@
 package no.battlefront.balancer.dto
 
 /**
- * Opprette ny spiller + initial sesongstat.
+ * Request body for creating a new player (POST /api/players).
+ *
+ * @param nickname display name
+ * @param nation 2-letter country code
+ * @param rating overall rating (1–99); used to derive initial BR/best
  */
 data class PlayerCreateRequest(
     val nickname: String,
@@ -10,7 +14,13 @@ data class PlayerCreateRequest(
 )
 
 /**
- * Oppdatere eksisterende spiller + BR for nåværende sesong.
+ * Request body for updating a player (PUT /api/players/{id}).
+ *
+ * @param nickname display name
+ * @param nation 2-letter country code
+ * @param rating overall rating
+ * @param dzrating DZ rating
+ * @param br new battle rating for the current season
  */
 data class PlayerUpdateRequest(
     val nickname: String,

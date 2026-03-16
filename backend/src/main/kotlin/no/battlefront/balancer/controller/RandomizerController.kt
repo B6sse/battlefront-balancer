@@ -15,15 +15,19 @@ import org.springframework.web.bind.annotation.RestController
 class RandomizerController(private val randomizerService: RandomizerService) {
 
     /**
-     * GET /api/randomizer – siste map/rule (tilsvarer api_randomizer.php).
-     * Default "Dune Sea" / "DSE" ved tom tabell.
+     * Returns the latest randomizer entry (map and rule). Uses default "Dune Sea" / "DSE" when the table is empty.
+     *
+     * @return [ResponseEntity] containing [RandomizerDto] with map and rule.
      */
     @GetMapping("/randomizer")
     fun getLatest(): ResponseEntity<RandomizerDto> =
         ResponseEntity.ok(randomizerService.getLatest())
 
     /**
-     * POST /api/randomizer – lagre ny map/rule (tilsvarer randomizerSubmit.php).
+     * Saves a new randomizer entry (map and rule).
+     *
+     * @param request the map and rule to store.
+     * @return [ResponseEntity] with success or error message and status 200 or 400.
      */
     @PostMapping("/randomizer")
     fun submit(@RequestBody request: RandomizerSubmitRequest): ResponseEntity<Map<String, Any>> {

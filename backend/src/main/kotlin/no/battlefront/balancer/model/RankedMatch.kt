@@ -29,7 +29,7 @@ class RankedMatch(
     var imperialScore: Int = 0,
 
     @Column(name = "mvp", nullable = true)
-    var mvpId: Long? = null,  // FK to Player
+    var mvpId: Long? = null,  // FK to Player (nullable)
 
     @Column(name = "supervisor", nullable = false)
     var supervisorId: Long = 0,  // FK to User

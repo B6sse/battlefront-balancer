@@ -19,16 +19,19 @@ import org.springframework.web.bind.annotation.RestController
 class PlayerController(private val playerService: PlayerService) {
 
     /**
-     * GET /api/players – spillere med sesongstatistikk for nåværende sesong.
-     * Tilsvarer gammel api_players.php.
+     * Returns all players with their season statistics for the current season.
+     *
+     * @return [ResponseEntity] containing a list of [PlayerWithStatsDto]; never null.
      */
     @GetMapping("/players")
     fun getPlayers(): ResponseEntity<List<PlayerWithStatsDto>> =
         ResponseEntity.ok(playerService.getPlayersWithCurrentSeasonStats())
 
     /**
-     * POST /api/players – opprett spiller + initial sesongstat.
-     * Tilsvarer action/add.php (uten auth/CSRF).
+     * Creates a new player and initial season stats for the current season.
+     *
+     * @param request the player data (nickname, nation, rating).
+     * @return [ResponseEntity] with the saved [Player] on success, or 400 with error message on validation failure.
      */
     @PostMapping("/players")
     fun createPlayer(@RequestBody request: PlayerCreateRequest): ResponseEntity<Any> =
@@ -40,8 +43,11 @@ class PlayerController(private val playerService: PlayerService) {
         }
 
     /**
-     * PUT /api/players/{id} – oppdater spiller + BR for gjeldende sesong.
-     * Tilsvarer action/update.php (uten auth/CSRF).
+     * Updates an existing player and their BR for the current season.
+     *
+     * @param id the player's primary key.
+     * @param request the updated player data and new BR.
+     * @return [ResponseEntity] with the saved [Player] on success, or 400 with error message on failure.
      */
     @PutMapping("/players/{id}")
     fun updatePlayer(
@@ -58,8 +64,10 @@ class PlayerController(private val playerService: PlayerService) {
         }
 
     /**
-     * DELETE /api/players/{id} – slett spiller.
-     * Tilsvarer action/delete.php (uten auth/CSRF).
+     * Deletes a player by id. Related season stats are removed via cascade.
+     *
+     * @param id the player's primary key.
+     * @return [ResponseEntity] with 204 No Content on success.
      */
     @DeleteMapping("/players/{id}")
     fun deletePlayer(@PathVariable id: Long): ResponseEntity<Void> {

@@ -1,7 +1,10 @@
 package no.battlefront.balancer.dto
 
 /**
- * Respons for GET /api/randomizer (tilsvarer api_randomizer.php).
+ * Response for GET /api/randomizer (latest map and rule).
+ *
+ * @param map map name
+ * @param rule rule code
  */
 data class RandomizerDto(
     val map: String,

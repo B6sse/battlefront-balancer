@@ -9,7 +9,11 @@ import org.springframework.stereotype.Service
 class RandomizerService(private val randomizerRepository: RandomizerRepository) {
 
     /**
-     * Lagre ny randomizer (tilsvarer randomizerSubmit.php).
+     * Saves a new randomizer entry.
+     *
+     * @param map the map name.
+     * @param rule the rule code.
+     * @return the persisted [Randomizer] entity.
      */
     fun save(map: String, rule: String): Randomizer {
         val entity = Randomizer(map = map, rule = rule)
@@ -17,7 +21,9 @@ class RandomizerService(private val randomizerRepository: RandomizerRepository) 
     }
 
     /**
-     * Siste randomizer (map/rule). Default som i gammel api_randomizer.php ved tom tabell.
+     * Returns the latest randomizer (map and rule). Defaults to "Dune Sea" / "DSE" when the table is empty.
+     *
+     * @return [RandomizerDto] with map and rule; never null.
      */
     fun getLatest(): RandomizerDto {
         val r = randomizerRepository.findTop1ByOrderByIdDesc()

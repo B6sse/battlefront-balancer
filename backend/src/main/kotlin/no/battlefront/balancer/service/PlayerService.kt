@@ -19,7 +19,9 @@ class PlayerService(
 ) {
 
     /**
-     * Spillere med sesongstatistikk for nåværende sesong (tilsvarer api_players.php).
+     * Returns all players with their season statistics for the current season.
+     *
+     * @return list of [PlayerWithStatsDto]; never null, may be empty.
      */
     fun getPlayersWithCurrentSeasonStats(): List<PlayerWithStatsDto> {
         val season = currentSeasonRepository.findCurrentSeason() ?: 1
@@ -46,8 +48,12 @@ class PlayerService(
     }
 
     /**
-     * Opprette ny spiller + initial ranked_pstats for gjeldende sesong.
-     * Tilsvarer action/add.php (uten auth og CSRF).
+     * Creates a new player and initial [RankedPlayerStat] row for the current season.
+     * Initial BR/best are derived from rating buckets (e.g. rating 60 -> 750, 89 -> 1000).
+     *
+     * @param request nickname, nation (2-letter code), and rating (1–99).
+     * @return the persisted [Player].
+     * @throws IllegalArgumentException if nickname is empty, rating out of range, or nation not 2 letters.
      */
     @Transactional
     fun createPlayer(request: PlayerCreateRequest): Player {
@@ -101,8 +107,13 @@ class PlayerService(
     }
 
     /**
-     * Oppdatere spiller + BR for gjeldende sesong.
-     * Tilsvarer action/update.php (uten auth og CSRF).
+     * Updates an existing player's profile and their BR for the current season.
+     *
+     * @param id the player's primary key.
+     * @param request nickname, nation, rating, dzrating, and new br.
+     * @return the persisted [Player].
+     * @throws IllegalArgumentException if id not found or validation fails.
+     * @throws IllegalStateException if no season stats exist for this player and season.
      */
     @Transactional
     fun updatePlayer(id: Long, request: PlayerUpdateRequest): Player {
@@ -137,8 +148,9 @@ class PlayerService(
     }
 
     /**
-     * Slette spiller (og tilhørende stats via ON DELETE CASCADE).
-     * Tilsvarer action/delete.php (uten auth og CSRF).
+     * Deletes a player by id. Related [RankedPlayerStat] rows are removed by DB cascade.
+     *
+     * @param id the player's primary key. No-op if the player does not exist.
      */
     @Transactional
     fun deletePlayer(id: Long) {

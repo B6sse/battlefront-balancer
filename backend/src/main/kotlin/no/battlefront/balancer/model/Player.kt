@@ -13,7 +13,7 @@ class Player(
     var nickname: String = "",
 
     @Column(nullable = false, length = 2)
-    var nation: String = "",  // f.eks. "no", "us"
+    var nation: String = "",  // e.g. "no", "us"
 
     @Column(nullable = false)
     var rating: Int = 0,

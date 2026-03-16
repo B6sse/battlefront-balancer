@@ -23,8 +23,11 @@ class MatchService(
 ) {
 
     /**
-     * Lagre match + per-spiller stats og oppdater sesongstat (tilsvarer matchSubmit.php).
-     * matchData = [map, team_size, mvp_id, rebel_score, imperial_score, rule].
+     * Persists a match, per-player stats ([RankedMatchStat]), and updates [RankedPlayerStat] for all participants.
+     * Expects [MatchSubmitRequest.matchData] as list: [map, team_size, mvp_id, rebel_score, imperial_score, rule].
+     *
+     * @param request the match payload (matchData, rebels, imperials, optional supervisorId).
+     * @throws IllegalArgumentException if matchData has fewer than 6 elements.
      */
     @Transactional
     fun submitMatch(request: MatchSubmitRequest) {
@@ -89,8 +92,9 @@ class MatchService(
     }
 
     /**
-     * Spillere som deltok i siste match, med sesongstat for nåværende sesong.
-     * Tilsvarer api_lastMatch.php.
+     * Returns players who participated in the most recent match, with their current season stats.
+     *
+     * @return list of [LastMatchPlayerDto]; empty if no match exists.
      */
     fun getPlayersInLastMatch(): List<LastMatchPlayerDto> {
         val latestMatch = rankedMatchRepository.findTop1ByOrderByIdDesc() ?: return emptyList()

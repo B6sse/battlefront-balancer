@@ -11,19 +11,19 @@ class RankedMatchStat(
     val id: Long = 0,
 
     @Column(name = "player_id", nullable = false)
-    var playerId: Long = 0, // FK to players table
+    var playerId: Long = 0,  // FK to players
 
     @Column(name = "match_id", nullable = false)
-    var matchId: Long = 0, // FK to matches table
+    var matchId: Long = 0,  // FK to ranked_matches
 
     @Column(nullable = false)
     var season: Int = 0,
 
     @Column(nullable = false, length = 20)
-    var faction: String = "",  // "Rebel" or "Imperial"
+    var faction: String = "",  // Rebel or Imperial
 
     @Column(nullable = false, length = 10)
-    var result: String = "",  // "Won", "Lost", "Draw"
+    var result: String = "",  // Won, Lost, Draw
 
     @Column(nullable = false)
     var score: Int = 0,
@@ -32,7 +32,7 @@ class RankedMatchStat(
     var perf: Double = 0.0,  // performance/carry
 
     @Column(name = "update_br", nullable = false)
-    var updateBr: Int = 0,   // BR-change (+/-)
+    var updateBr: Int = 0,   // BR change (+/-)
 
     @Column(name = "new_br", nullable = false)
     var newBr: Int = 0       // BR after match
