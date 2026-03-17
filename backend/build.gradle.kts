@@ -4,6 +4,8 @@ plugins {
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.6"
     kotlin("plugin.spring") version "2.3.0"
+    id("org.jetbrains.kotlinx.kover") version "0.9.7"
+    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
 }
 
 group = "no.battlefront.balancer"
@@ -36,6 +38,23 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+// Kover: code coverage for Kotlin tests
+kover {
+    // Keep default settings; adjust later if you want specific filters/thresholds
+}
+
+// ktlint: Kotlin code style checks
+ktlint {
+    verbose.set(true)
+    android.set(false)
+    // You can add an .editorconfig later for project-specific rules
+}
+
+tasks.check {
+    // Ensure style checks and tests run as part of the standard verification lifecycle
+    dependsOn("ktlintCheck")
 }
 
 

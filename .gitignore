@@ -56,3 +56,5 @@ frontend/.env.*.local
 frontend/npm-debug.log*
 frontend/.npm
 /.idea/
+
+docs/
