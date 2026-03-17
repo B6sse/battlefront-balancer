@@ -25,3 +25,10 @@ server:
         http-only: true
         secure: ${SESSION_COOKIE_SECURE:true}
         same-site: strict
+
+# Rate limit for login
+app:
+  rate-limit:
+    login:
+      enabled: ${RATE_LIMIT_LOGIN_ENABLED:true}
+      max-per-minute: ${RATE_LIMIT_LOGIN_PER_MINUTE:10}
