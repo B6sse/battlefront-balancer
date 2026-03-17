@@ -2,9 +2,13 @@ package no.battlefront.balancer.model
 
 import jakarta.persistence.*
 
+/**
+ * Per-player aggregate statistics for a season. One row per player per season.
+ *
+ * @param playerId FK to [Player]
+ */
 @Entity
 @Table(name = "ranked_pstats")
-
 class RankedPlayerStat(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

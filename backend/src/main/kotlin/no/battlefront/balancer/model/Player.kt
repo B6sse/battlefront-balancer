@@ -2,6 +2,11 @@ package no.battlefront.balancer.model
 
 import jakarta.persistence.*
 
+/**
+ * Player in the ranked system. Identified by nickname; has rating, nation and ELO/BR-related fields.
+ *
+ * @param nation 2-letter ISO country code (e.g. "no", "us")
+ */
 @Entity
 @Table(name = "players")
 class Player(
@@ -13,7 +18,7 @@ class Player(
     var nickname: String = "",
 
     @Column(nullable = false, length = 2)
-    var nation: String = "",  // e.g. "no", "us"
+    var nation: String = "",
 
     @Column(nullable = false)
     var rating: Int = 0,
