@@ -75,3 +75,12 @@ Stop: `docker compose down`.
 | Frontend | 5173        | 80     |
 | Backend  | 8080        | 8080   |
 | Postgres | 5432        | 5432   |
+
+## PWA (Add to Home Screen)
+
+The app is set up as a **Progressive Web App**: it works as a normal website and can also be added to the home screen on iPhone and Android.
+
+- **Android (Chrome):** Menu → “Add to Home screen” or “Install app”.
+- **iPhone (Safari):** Share → “Add to Home Screen”.
+
+The site uses a [web app manifest](frontend/public/manifest.webmanifest) and the relevant meta tags so the installed icon and name (“BF Balancer”) appear correctly. For best results on all devices, add PNG icons (e.g. 192×192 and 512×512) to `frontend/public/` and reference them in the manifest.

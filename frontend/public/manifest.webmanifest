@@ -1,0 +1,18 @@
+{
+  "name": "Battlefront Balancer",
+  "short_name": "BF Balancer",
+  "description": "Ranked play and ratings for balanced Star Wars Battlefront matches",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
