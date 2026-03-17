@@ -10,6 +10,8 @@ import no.battlefront.balancer.repository.PlayerRepository
 import no.battlefront.balancer.repository.RankedMatchRepository
 import no.battlefront.balancer.repository.RankedMatchStatRepository
 import no.battlefront.balancer.repository.RankedPlayerStatRepository
+import no.battlefront.balancer.security.CurrentUserService
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -19,11 +21,12 @@ class MatchService(
     private val rankedMatchStatRepository: RankedMatchStatRepository,
     private val playerRepository: PlayerRepository,
     private val rankedPlayerStatRepository: RankedPlayerStatRepository,
-    private val currentSeasonRepository: CurrentSeasonRepository
+    private val currentSeasonRepository: CurrentSeasonRepository,
+    private val currentUserService: CurrentUserService
 ) {
 
     /**
-     * Persists a match, per-player stats ([RankedMatchStat]), and updates [RankedPlayerStat] for all participants.
+     * Persists a match, per-player stats ([RankedMatchStat]), and updates [RankedPlayerStat][no.battlefront.balancer.model.RankedPlayerStat] for all participants.
      * Expects [MatchSubmitRequest.matchData] as list: [map, team_size, mvp_id, rebel_score, imperial_score, rule].
      *
      * @param request the match payload (matchData, rebels, imperials, optional supervisorId).
@@ -32,6 +35,7 @@ class MatchService(
     @Transactional
     fun submitMatch(request: MatchSubmitRequest) {
         require(request.matchData.size >= 6) { "Incomplete data provided" }
+        val supervisorId = currentUserService.currentUserId() ?: throw AccessDeniedException("Not authenticated")
         val map = request.matchData[0].toString()
         val teamSize = (request.matchData[1] as Number).toInt()
         val mvpIdRaw = (request.matchData[2] as Number).toLong()
@@ -49,7 +53,7 @@ class MatchService(
             rebelScore = rebelScore,
             imperialScore = imperialScore,
             mvpId = mvpId,
-            supervisorId = request.supervisorId
+            supervisorId = supervisorId
         )
         val savedMatch = rankedMatchRepository.save(match)
         val matchId = savedMatch.id
