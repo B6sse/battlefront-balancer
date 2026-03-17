@@ -31,7 +31,7 @@ class PlayerController(private val playerService: PlayerService) {
      * Creates a new player and initial season stats for the current season.
      *
      * @param request the player data (nickname, nation, rating).
-     * @return [ResponseEntity] with the saved [Player] on success, or 400 with error message on validation failure.
+     * @return [ResponseEntity] with the saved [Player][no.battlefront.balancer.model.Player] on success, or 400 with error message on validation failure.
      */
     @PostMapping("/players")
     fun createPlayer(@RequestBody request: PlayerCreateRequest): ResponseEntity<Any> =
@@ -47,7 +47,7 @@ class PlayerController(private val playerService: PlayerService) {
      *
      * @param id the player's primary key.
      * @param request the updated player data and new BR.
-     * @return [ResponseEntity] with the saved [Player] on success, or 400 with error message on failure.
+     * @return [ResponseEntity] with the saved [Player][no.battlefront.balancer.model.Player] on success, or 400 with error message on failure.
      */
     @PutMapping("/players/{id}")
     fun updatePlayer(

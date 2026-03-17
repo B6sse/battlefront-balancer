@@ -2,7 +2,6 @@ package no.battlefront.balancer.repository
 
 import no.battlefront.balancer.model.RankedMatch
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
 
 /**
  * Spring Data JPA repository for [RankedMatch] entities.
