@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Query
  * Spring Data JPA repository for [RankedPlayerStat] (season stats per player).
  */
 interface RankedPlayerStatRepository : JpaRepository<RankedPlayerStat, Long> {
-
     /**
      * Returns all season stats for the given season, ordered by BR descending.
      */
@@ -18,5 +17,8 @@ interface RankedPlayerStatRepository : JpaRepository<RankedPlayerStat, Long> {
     /**
      * Returns the season stat for the given player and season, or null if none.
      */
-    fun findByPlayerIdAndSeason(playerId: Long, season: Int): RankedPlayerStat?
+    fun findByPlayerIdAndSeason(
+        playerId: Long,
+        season: Int,
+    ): RankedPlayerStat?
 }

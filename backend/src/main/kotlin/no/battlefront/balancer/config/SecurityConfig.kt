@@ -29,7 +29,6 @@ import org.springframework.security.web.context.SecurityContextHolderFilter
 @Configuration
 @EnableWebSecurity
 class SecurityConfig {
-
     /**
      * Provides a BCrypt password encoder for hashing and verifying user passwords.
      *
@@ -46,7 +45,7 @@ class SecurityConfig {
      */
     @Bean
     fun loginRateLimitStore(
-        @Value("\${app.rate-limit.login.max-per-minute:10}") maxPerMinute: Int
+        @Value("\${app.rate-limit.login.max-per-minute:10}") maxPerMinute: Int,
     ): LoginRateLimitStore = LoginRateLimitStore(maxPerMinute)
 
     /**
@@ -57,8 +56,7 @@ class SecurityConfig {
      * @return the [AuthenticationManager] for programmatic authentication
      */
     @Bean
-    fun authenticationManager(config: AuthenticationConfiguration): AuthenticationManager =
-        config.authenticationManager
+    fun authenticationManager(config: AuthenticationConfiguration): AuthenticationManager = config.authenticationManager
 
     /**
      * Defines the security filter chain: which paths are public, which require authentication,
@@ -72,26 +70,32 @@ class SecurityConfig {
     @Bean
     fun securityFilterChain(
         http: HttpSecurity,
-        loginRateLimitFilter: LoginRateLimitFilter
+        loginRateLimitFilter: LoginRateLimitFilter,
     ): SecurityFilterChain {
         http
             .addFilterBefore(loginRateLimitFilter, SecurityContextHolderFilter::class.java)
             .csrf { it.disable() }
             .sessionManagement { session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-            }
-            .authorizeHttpRequests { auth ->
+            }.authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers(HttpMethod.GET, "/api/health", "/api/players", "/api/randomizer", "/api/last-match").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/login", "/api/logout").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/me").authenticated()
-                    .requestMatchers(HttpMethod.POST, "/api/matches", "/api/randomizer").hasAnyAuthority("ROLE_admin", "ROLE_supervisor")
-                    .requestMatchers(HttpMethod.POST, "/api/players").hasAuthority("ROLE_admin")
-                    .requestMatchers(HttpMethod.PUT, "/api/players/*").hasAuthority("ROLE_admin")
-                    .requestMatchers(HttpMethod.DELETE, "/api/players/*").hasAuthority("ROLE_admin")
-                    .anyRequest().denyAll()
-            }
-            .formLogin { it.disable() }
+                    .requestMatchers(HttpMethod.GET, "/api/health", "/api/players", "/api/randomizer", "/api/last-match")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/login", "/api/logout")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/me")
+                    .authenticated()
+                    .requestMatchers(HttpMethod.POST, "/api/matches", "/api/randomizer")
+                    .hasAnyAuthority("ROLE_admin", "ROLE_supervisor")
+                    .requestMatchers(HttpMethod.POST, "/api/players")
+                    .hasAuthority("ROLE_admin")
+                    .requestMatchers(HttpMethod.PUT, "/api/players/*")
+                    .hasAuthority("ROLE_admin")
+                    .requestMatchers(HttpMethod.DELETE, "/api/players/*")
+                    .hasAuthority("ROLE_admin")
+                    .anyRequest()
+                    .denyAll()
+            }.formLogin { it.disable() }
             .httpBasic { it.disable() }
             .logout { it.disable() }
         return http.build()

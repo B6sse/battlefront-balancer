@@ -56,5 +56,3 @@ tasks.check {
     // Ensure style checks and tests run as part of the standard verification lifecycle
     dependsOn("ktlintCheck")
 }
-
-

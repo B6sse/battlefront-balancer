@@ -15,9 +15,8 @@ import org.springframework.transaction.annotation.Transactional
 class PlayerService(
     private val playerRepository: PlayerRepository,
     private val rankedPlayerStatRepository: RankedPlayerStatRepository,
-    private val currentSeasonRepository: CurrentSeasonRepository
+    private val currentSeasonRepository: CurrentSeasonRepository,
 ) {
-
     /**
      * Returns all players with their season statistics for the current season.
      *
@@ -26,25 +25,26 @@ class PlayerService(
     fun getPlayersWithCurrentSeasonStats(): List<PlayerWithStatsDto> {
         val season = currentSeasonRepository.findCurrentSeason() ?: 1
         val stats = rankedPlayerStatRepository.findBySeason(season)
-        return stats.map { stat ->
-            val player = playerRepository.findById(stat.playerId).orElse(null) ?: return@map null
-            PlayerWithStatsDto(
-                id = player.id,
-                nickname = player.nickname,
-                nation = player.nation,
-                rating = player.rating,
-                dzrating = player.dzrating,
-                elo = player.elo,
-                br = stat.br,
-                played = stat.played,
-                best = stat.best,
-                won = stat.won,
-                lost = stat.lost,
-                draw = stat.draw,
-                score = stat.score,
-                mvp = stat.mvp
-            )
-        }.filterNotNull()
+        return stats
+            .map { stat ->
+                val player = playerRepository.findById(stat.playerId).orElse(null) ?: return@map null
+                PlayerWithStatsDto(
+                    id = player.id,
+                    nickname = player.nickname,
+                    nation = player.nation,
+                    rating = player.rating,
+                    dzrating = player.dzrating,
+                    elo = player.elo,
+                    br = stat.br,
+                    played = stat.played,
+                    best = stat.best,
+                    won = stat.won,
+                    lost = stat.lost,
+                    draw = stat.draw,
+                    score = stat.score,
+                    mvp = stat.mvp,
+                )
+            }.filterNotNull()
     }
 
     /**
@@ -67,40 +67,43 @@ class PlayerService(
 
         val dzrating = rating
 
-        val br = when {
-            rating <= 60 -> 750
-            rating <= 65 -> 800
-            rating <= 71 -> 850
-            rating <= 78 -> 900
-            rating <= 86 -> 950
-            rating <= 89 -> 1000
-            else -> 1050
-        }
+        val br =
+            when {
+                rating <= 60 -> 750
+                rating <= 65 -> 800
+                rating <= 71 -> 850
+                rating <= 78 -> 900
+                rating <= 86 -> 950
+                rating <= 89 -> 1000
+                else -> 1050
+            }
         val best = br
 
         val season = currentSeasonRepository.findCurrentSeason() ?: 1
 
-        val player = Player(
-            nickname = nickname,
-            nation = nation,
-            rating = rating,
-            dzrating = dzrating,
-            elo = 0
-        )
+        val player =
+            Player(
+                nickname = nickname,
+                nation = nation,
+                rating = rating,
+                dzrating = dzrating,
+                elo = 0,
+            )
         val savedPlayer = playerRepository.save(player)
 
-        val stats = RankedPlayerStat(
-            playerId = savedPlayer.id,
-            season = season,
-            br = br,
-            best = best,
-            played = 0,
-            won = 0,
-            lost = 0,
-            draw = 0,
-            score = 0,
-            mvp = 0
-        )
+        val stats =
+            RankedPlayerStat(
+                playerId = savedPlayer.id,
+                season = season,
+                br = br,
+                best = best,
+                played = 0,
+                won = 0,
+                lost = 0,
+                draw = 0,
+                score = 0,
+                mvp = 0,
+            )
         rankedPlayerStatRepository.save(stats)
 
         return savedPlayer
@@ -116,7 +119,10 @@ class PlayerService(
      * @throws IllegalStateException if no season stats exist for this player and season.
      */
     @Transactional
-    fun updatePlayer(id: Long, request: PlayerUpdateRequest): Player {
+    fun updatePlayer(
+        id: Long,
+        request: PlayerUpdateRequest,
+    ): Player {
         val player = playerRepository.findById(id).orElseThrow { IllegalArgumentException("Player not found") }
 
         val nickname = request.nickname.trim()
@@ -138,8 +144,9 @@ class PlayerService(
         val savedPlayer = playerRepository.save(player)
 
         val season = currentSeasonRepository.findCurrentSeason() ?: 1
-        val stats = rankedPlayerStatRepository.findByPlayerIdAndSeason(savedPlayer.id, season)
-            ?: throw IllegalStateException("Season stats not found for player")
+        val stats =
+            rankedPlayerStatRepository.findByPlayerIdAndSeason(savedPlayer.id, season)
+                ?: throw IllegalStateException("Season stats not found for player")
 
         stats.br = br
         rankedPlayerStatRepository.save(stats)
@@ -160,4 +167,3 @@ class PlayerService(
         playerRepository.deleteById(id)
     }
 }
-

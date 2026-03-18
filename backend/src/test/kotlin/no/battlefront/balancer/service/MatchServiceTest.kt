@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import org.springframework.security.access.AccessDeniedException
 
 /**
@@ -23,7 +23,6 @@ import org.springframework.security.access.AccessDeniedException
  */
 @Tag("MatchService")
 class MatchServiceTest {
-
     private val rankedMatchRepository: RankedMatchRepository = mock(RankedMatchRepository::class.java)
     private val rankedMatchStatRepository: RankedMatchStatRepository =
         mock(RankedMatchStatRepository::class.java)
@@ -32,14 +31,15 @@ class MatchServiceTest {
         mock(RankedPlayerStatRepository::class.java)
     private val currentSeasonRepository: CurrentSeasonRepository = mock(CurrentSeasonRepository::class.java)
     private val currentUserService: CurrentUserService = mock(CurrentUserService::class.java)
-    private val service = MatchService(
-        rankedMatchRepository = rankedMatchRepository,
-        rankedMatchStatRepository = rankedMatchStatRepository,
-        playerRepository = playerRepository,
-        rankedPlayerStatRepository = rankedPlayerStatRepository,
-        currentSeasonRepository = currentSeasonRepository,
-        currentUserService = currentUserService
-    )
+    private val service =
+        MatchService(
+            rankedMatchRepository = rankedMatchRepository,
+            rankedMatchStatRepository = rankedMatchStatRepository,
+            playerRepository = playerRepository,
+            rankedPlayerStatRepository = rankedPlayerStatRepository,
+            currentSeasonRepository = currentSeasonRepository,
+            currentUserService = currentUserService,
+        )
 
     /**
      * Test that submitMatch throws AccessDeniedException when no user is authenticated.
@@ -51,11 +51,12 @@ class MatchServiceTest {
     @Test
     fun `submitMatch throws when not authenticated`() {
         `when`(currentUserService.currentUserId()).thenReturn(null)
-        val request = MatchSubmitRequest(
-            matchData = listOf("Map", 4, 0L, 3, 2, "Rule"),
-            rebels = emptyList(),
-            imperials = emptyList()
-        )
+        val request =
+            MatchSubmitRequest(
+                matchData = listOf("Map", 4, 0L, 3, 2, "Rule"),
+                rebels = emptyList(),
+                imperials = emptyList(),
+            )
         assertThrows<AccessDeniedException> { service.submitMatch(request) }
     }
 
@@ -69,11 +70,12 @@ class MatchServiceTest {
     @Test
     fun `submitMatch throws when matchData has fewer than 6 elements`() {
         `when`(currentUserService.currentUserId()).thenReturn(100L)
-        val request = MatchSubmitRequest(
-            matchData = listOf("Map", 4),
-            rebels = emptyList(),
-            imperials = emptyList()
-        )
+        val request =
+            MatchSubmitRequest(
+                matchData = listOf("Map", 4),
+                rebels = emptyList(),
+                imperials = emptyList(),
+            )
         assertThrows<IllegalArgumentException> { service.submitMatch(request) }
     }
 
@@ -100,50 +102,54 @@ class MatchServiceTest {
      */
     @Test
     fun `getPlayersInLastMatch returns players when match and stats exist`() {
-        val match = RankedMatch(
-            id = 1L,
-            map = "Imperial Station",
-            rule = "DACE",
-            season = 1,
-            teamSize = 4,
-            rebelScore = 3,
-            imperialScore = 2,
-            mvpId = 10L,
-            supervisorId = 1L
-        )
-        val stat = RankedMatchStat(
-            id = 1L,
-            playerId = 10L,
-            matchId = 1L,
-            season = 1,
-            faction = "Rebel",
-            result = "Won",
-            score = 100,
-            perf = 1.2,
-            updateBr = 25,
-            newBr = 925
-        )
-        val player = no.battlefront.balancer.model.Player(
-            id = 10L,
-            nickname = "Player1",
-            nation = "no",
-            rating = 80,
-            dzrating = 80,
-            elo = 900
-        )
-        val pstat = no.battlefront.balancer.model.RankedPlayerStat(
-            id = 1L,
-            playerId = 10L,
-            season = 1,
-            br = 925,
-            best = 950,
-            played = 6,
-            won = 4,
-            lost = 1,
-            draw = 1,
-            score = 150,
-            mvp = 1
-        )
+        val match =
+            RankedMatch(
+                id = 1L,
+                map = "Imperial Station",
+                rule = "DACE",
+                season = 1,
+                teamSize = 4,
+                rebelScore = 3,
+                imperialScore = 2,
+                mvpId = 10L,
+                supervisorId = 1L,
+            )
+        val stat =
+            RankedMatchStat(
+                id = 1L,
+                playerId = 10L,
+                matchId = 1L,
+                season = 1,
+                faction = "Rebel",
+                result = "Won",
+                score = 100,
+                perf = 1.2,
+                updateBr = 25,
+                newBr = 925,
+            )
+        val player =
+            no.battlefront.balancer.model.Player(
+                id = 10L,
+                nickname = "Player1",
+                nation = "no",
+                rating = 80,
+                dzrating = 80,
+                elo = 900,
+            )
+        val pstat =
+            no.battlefront.balancer.model.RankedPlayerStat(
+                id = 1L,
+                playerId = 10L,
+                season = 1,
+                br = 925,
+                best = 950,
+                played = 6,
+                won = 4,
+                lost = 1,
+                draw = 1,
+                score = 150,
+                mvp = 1,
+            )
         `when`(rankedMatchRepository.findTop1ByOrderByIdDesc()).thenReturn(match)
         `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
         `when`(rankedMatchStatRepository.findByMatchId(1L)).thenReturn(listOf(stat))

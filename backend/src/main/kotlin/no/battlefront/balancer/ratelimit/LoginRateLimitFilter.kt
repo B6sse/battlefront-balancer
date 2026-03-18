@@ -20,9 +20,8 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Order(0)
 class LoginRateLimitFilter(
     private val loginRateLimitStore: LoginRateLimitStore,
-    @param:Value($$"${app.rate-limit.login.enabled:true}") private val enabled: Boolean
+    @param:Value($$"${app.rate-limit.login.enabled:true}") private val enabled: Boolean,
 ) : OncePerRequestFilter() {
-
     /**
      * Runs the filter: for POST /api/login, checks rate limit per client; otherwise delegates to the chain.
      * When rate limit is exceeded, writes 429 with [Retry-After] and a JSON error body and does not call the chain.
@@ -34,7 +33,7 @@ class LoginRateLimitFilter(
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
-        filterChain: FilterChain
+        filterChain: FilterChain,
     ) {
         if (!enabled || !isLoginRequest(request)) {
             filterChain.doFilter(request, response)

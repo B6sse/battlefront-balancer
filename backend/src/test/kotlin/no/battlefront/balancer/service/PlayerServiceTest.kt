@@ -12,16 +12,15 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.`when`
 
 /**
  * JUnit test class for [PlayerService].
  */
 @Tag("PlayerService")
 class PlayerServiceTest {
-
     private val playerRepository: PlayerRepository = mock(PlayerRepository::class.java)
     private val rankedPlayerStatRepository: RankedPlayerStatRepository =
         mock(RankedPlayerStatRepository::class.java)
@@ -56,19 +55,20 @@ class PlayerServiceTest {
     fun `getPlayersWithCurrentSeasonStats returns players with stats when data exists`() {
         `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
         val player = Player(id = 10L, nickname = "Test", nation = "no", rating = 80, dzrating = 80, elo = 900)
-        val stat = RankedPlayerStat(
-            id = 1L,
-            playerId = 10L,
-            season = 1,
-            br = 900,
-            best = 950,
-            played = 5,
-            won = 3,
-            lost = 1,
-            draw = 1,
-            score = 100,
-            mvp = 1
-        )
+        val stat =
+            RankedPlayerStat(
+                id = 1L,
+                playerId = 10L,
+                season = 1,
+                br = 900,
+                best = 950,
+                played = 5,
+                won = 3,
+                lost = 1,
+                draw = 1,
+                score = 100,
+                mvp = 1,
+            )
         `when`(rankedPlayerStatRepository.findBySeason(1)).thenReturn(listOf(stat))
         `when`(playerRepository.findById(10L)).thenReturn(java.util.Optional.of(player))
 
@@ -90,14 +90,15 @@ class PlayerServiceTest {
     @Test
     fun `createPlayer succeeds and returns saved player with initial stats`() {
         `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
-        val savedPlayer = Player(
-            id = 1L,
-            nickname = "NewPlayer",
-            nation = "no",
-            rating = 65,
-            dzrating = 65,
-            elo = 0
-        )
+        val savedPlayer =
+            Player(
+                id = 1L,
+                nickname = "NewPlayer",
+                nation = "no",
+                rating = 65,
+                dzrating = 65,
+                elo = 0,
+            )
         `when`(playerRepository.save(any(Player::class.java))).thenReturn(savedPlayer)
         `when`(rankedPlayerStatRepository.save(any(RankedPlayerStat::class.java))).thenAnswer { it.getArgument(0) }
 
@@ -165,32 +166,34 @@ class PlayerServiceTest {
     @Test
     fun `updatePlayer succeeds and updates BR`() {
         val player = Player(id = 2L, nickname = "Old", nation = "us", rating = 70, dzrating = 70, elo = 850)
-        val stats = RankedPlayerStat(
-            id = 1L,
-            playerId = 2L,
-            season = 1,
-            br = 850,
-            best = 900,
-            played = 10,
-            won = 5,
-            lost = 3,
-            draw = 2,
-            score = 200,
-            mvp = 0
-        )
+        val stats =
+            RankedPlayerStat(
+                id = 1L,
+                playerId = 2L,
+                season = 1,
+                br = 850,
+                best = 900,
+                played = 10,
+                won = 5,
+                lost = 3,
+                draw = 2,
+                score = 200,
+                mvp = 0,
+            )
         `when`(playerRepository.findById(2L)).thenReturn(java.util.Optional.of(player))
         `when`(playerRepository.save(any(Player::class.java))).thenAnswer { it.getArgument(0) }
         `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
         `when`(rankedPlayerStatRepository.findByPlayerIdAndSeason(2L, 1)).thenReturn(stats)
         `when`(rankedPlayerStatRepository.save(any(RankedPlayerStat::class.java))).thenAnswer { it.getArgument(0) }
 
-        val request = PlayerUpdateRequest(
-            nickname = "Updated",
-            nation = "no",
-            rating = 72,
-            dzrating = 72,
-            br = 900
-        )
+        val request =
+            PlayerUpdateRequest(
+                nickname = "Updated",
+                nation = "no",
+                rating = 72,
+                dzrating = 72,
+                br = 900,
+            )
         val result = service.updatePlayer(2L, request)
 
         assertEquals("Updated", result.nickname)

@@ -13,8 +13,9 @@ import org.springframework.stereotype.Service
  * [UserDetails] instance. Throws [UsernameNotFoundException] if the user does not exist.
  */
 @Service
-class AppUserDetailsService(private val userRepository: UserRepository) : UserDetailsService {
-
+class AppUserDetailsService(
+    private val userRepository: UserRepository,
+) : UserDetailsService {
     /**
      * Loads the user by username and wraps it as [AppUserDetails].
      *
@@ -23,8 +24,9 @@ class AppUserDetailsService(private val userRepository: UserRepository) : UserDe
      * @throws UsernameNotFoundException if no user exists with the given username
      */
     override fun loadUserByUsername(username: String): UserDetails {
-        val user = userRepository.findByUsername(username)
-            ?: throw UsernameNotFoundException("User not found: $username")
+        val user =
+            userRepository.findByUsername(username)
+                ?: throw UsernameNotFoundException("User not found: $username")
         return AppUserDetails(user)
     }
 }

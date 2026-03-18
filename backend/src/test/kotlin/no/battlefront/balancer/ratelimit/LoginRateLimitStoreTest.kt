@@ -11,7 +11,6 @@ import org.junit.jupiter.api.assertThrows
  */
 @Tag("LoginRateLimitStore")
 class LoginRateLimitStoreTest {
-
     /**
      * Test that the constructor throws when maxPerMinute is zero.
      *

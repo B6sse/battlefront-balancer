@@ -7,15 +7,14 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 
 /**
  * JUnit test class for [RandomizerService].
  */
 @Tag("RandomizerService")
 class RandomizerServiceTest {
-
     private val randomizerRepository: RandomizerRepository = mock(RandomizerRepository::class.java)
     private val service = RandomizerService(randomizerRepository)
 

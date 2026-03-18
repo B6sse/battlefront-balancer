@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service
  */
 @Service
 class CurrentUserService {
-
     /**
      * Returns the current user's id, or null if not authenticated.
      */

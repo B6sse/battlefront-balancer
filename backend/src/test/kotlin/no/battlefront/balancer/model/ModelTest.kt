@@ -15,7 +15,6 @@ import java.time.LocalDateTime
  */
 @Tag("Model")
 class ModelTest {
-
     /**
      * Test [User] constructor with arguments and property get/set.
      *
@@ -88,14 +87,15 @@ class ModelTest {
      */
     @Test
     fun `Player constructor and properties`() {
-        val p = Player(
-            id = 1L,
-            nickname = "Test",
-            nation = "no",
-            rating = 80,
-            dzrating = 80,
-            elo = 900
-        )
+        val p =
+            Player(
+                id = 1L,
+                nickname = "Test",
+                nation = "no",
+                rating = 80,
+                dzrating = 80,
+                elo = 900,
+            )
         assertEquals(1L, p.id)
         assertEquals("Test", p.nickname)
         assertEquals("no", p.nation)
@@ -140,18 +140,19 @@ class ModelTest {
     @Test
     fun `RankedMatch constructor and properties`() {
         val d = LocalDateTime.of(2025, 1, 15, 12, 0)
-        val m = RankedMatch(
-            id = 1L,
-            map = "Jawa Refuge",
-            rule = "DACE",
-            season = 1,
-            teamSize = 4,
-            rebelScore = 3,
-            imperialScore = 2,
-            mvpId = 10L,
-            supervisorId = 5L,
-            date = d
-        )
+        val m =
+            RankedMatch(
+                id = 1L,
+                map = "Jawa Refuge",
+                rule = "DACE",
+                season = 1,
+                teamSize = 4,
+                rebelScore = 3,
+                imperialScore = 2,
+                mvpId = 10L,
+                supervisorId = 5L,
+                date = d,
+            )
         assertEquals(1L, m.id)
         assertEquals("Jawa Refuge", m.map)
         assertEquals("DACE", m.rule)
@@ -211,18 +212,19 @@ class ModelTest {
      */
     @Test
     fun `RankedMatchStat constructor and properties`() {
-        val s = RankedMatchStat(
-            id = 1L,
-            playerId = 10L,
-            matchId = 1L,
-            season = 1,
-            faction = "Rebel",
-            result = "Won",
-            score = 100,
-            perf = 1.2,
-            updateBr = 25,
-            newBr = 925
-        )
+        val s =
+            RankedMatchStat(
+                id = 1L,
+                playerId = 10L,
+                matchId = 1L,
+                season = 1,
+                faction = "Rebel",
+                result = "Won",
+                score = 100,
+                perf = 1.2,
+                updateBr = 25,
+                newBr = 925,
+            )
         assertEquals(1L, s.id)
         assertEquals(10L, s.playerId)
         assertEquals(1L, s.matchId)
@@ -282,19 +284,20 @@ class ModelTest {
      */
     @Test
     fun `RankedPlayerStat constructor and properties`() {
-        val s = RankedPlayerStat(
-            id = 1L,
-            playerId = 10L,
-            season = 1,
-            br = 900,
-            best = 950,
-            played = 10,
-            won = 5,
-            lost = 3,
-            draw = 2,
-            score = 200,
-            mvp = 1
-        )
+        val s =
+            RankedPlayerStat(
+                id = 1L,
+                playerId = 10L,
+                season = 1,
+                br = 900,
+                best = 950,
+                played = 10,
+                won = 5,
+                lost = 3,
+                draw = 2,
+                score = 200,
+                mvp = 1,
+            )
         assertEquals(1L, s.id)
         assertEquals(10L, s.playerId)
         assertEquals(1, s.season)

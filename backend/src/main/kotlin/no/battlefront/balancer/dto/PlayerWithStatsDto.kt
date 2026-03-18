@@ -32,5 +32,5 @@ data class PlayerWithStatsDto(
     val lost: Int,
     val draw: Int,
     val score: Int,
-    val mvp: Int
+    val mvp: Int,
 )

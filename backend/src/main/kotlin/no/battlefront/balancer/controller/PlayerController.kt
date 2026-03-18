@@ -16,16 +16,16 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api")
-class PlayerController(private val playerService: PlayerService) {
-
+class PlayerController(
+    private val playerService: PlayerService,
+) {
     /**
      * Returns all players with their season statistics for the current season.
      *
      * @return [ResponseEntity] containing a list of [PlayerWithStatsDto]; never null.
      */
     @GetMapping("/players")
-    fun getPlayers(): ResponseEntity<List<PlayerWithStatsDto>> =
-        ResponseEntity.ok(playerService.getPlayersWithCurrentSeasonStats())
+    fun getPlayers(): ResponseEntity<List<PlayerWithStatsDto>> = ResponseEntity.ok(playerService.getPlayersWithCurrentSeasonStats())
 
     /**
      * Creates a new player and initial season stats for the current season.
@@ -34,7 +34,9 @@ class PlayerController(private val playerService: PlayerService) {
      * @return [ResponseEntity] with the saved [Player][no.battlefront.balancer.model.Player] on success, or 400 with error message on validation failure.
      */
     @PostMapping("/players")
-    fun createPlayer(@RequestBody request: PlayerCreateRequest): ResponseEntity<Any> =
+    fun createPlayer(
+        @RequestBody request: PlayerCreateRequest,
+    ): ResponseEntity<Any> =
         try {
             val saved = playerService.createPlayer(request)
             ResponseEntity.ok(saved)
@@ -52,7 +54,7 @@ class PlayerController(private val playerService: PlayerService) {
     @PutMapping("/players/{id}")
     fun updatePlayer(
         @PathVariable id: Long,
-        @RequestBody request: PlayerUpdateRequest
+        @RequestBody request: PlayerUpdateRequest,
     ): ResponseEntity<Any> =
         try {
             val saved = playerService.updatePlayer(id, request)
@@ -70,9 +72,10 @@ class PlayerController(private val playerService: PlayerService) {
      * @return [ResponseEntity] with 204 No Content on success.
      */
     @DeleteMapping("/players/{id}")
-    fun deletePlayer(@PathVariable id: Long): ResponseEntity<Void> {
+    fun deletePlayer(
+        @PathVariable id: Long,
+    ): ResponseEntity<Void> {
         playerService.deletePlayer(id)
         return ResponseEntity.noContent().build()
     }
 }
-

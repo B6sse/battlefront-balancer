@@ -11,13 +11,17 @@ import java.util.concurrent.atomic.AtomicReference
  *
  * @param maxPerMinute maximum attempts per IP per minute; must be positive
  */
-class LoginRateLimitStore(private val maxPerMinute: Int) {
-
+class LoginRateLimitStore(
+    private val maxPerMinute: Int,
+) {
     init {
         require(maxPerMinute > 0) { "maxPerMinute must be positive" }
     }
 
-    private data class Window(val startMillis: Long, val count: Int)
+    private data class Window(
+        val startMillis: Long,
+        val count: Int,
+    )
 
     private val windows = ConcurrentHashMap<String, AtomicReference<Window>>()
 
@@ -36,14 +40,15 @@ class LoginRateLimitStore(private val maxPerMinute: Int) {
     fun tryAcquire(clientKey: String): RateLimitResult {
         val now = System.currentTimeMillis()
         val ref = windows.getOrPut(clientKey) { AtomicReference(Window(now, 0)) }
-        val updated = ref.updateAndGet { current ->
-            val elapsed = now - current.startMillis
-            if (elapsed >= WINDOW_MILLIS) {
-                Window(now, 1)
-            } else {
-                Window(current.startMillis, (current.count + 1).coerceAtMost(maxPerMinute + 1))
+        val updated =
+            ref.updateAndGet { current ->
+                val elapsed = now - current.startMillis
+                if (elapsed >= WINDOW_MILLIS) {
+                    Window(now, 1)
+                } else {
+                    Window(current.startMillis, (current.count + 1).coerceAtMost(maxPerMinute + 1))
+                }
             }
-        }
         val overLimit = updated.count > maxPerMinute
         return if (overLimit) {
             val windowEndSeconds = ((updated.startMillis + WINDOW_MILLIS - now) / 1000).coerceAtLeast(1)
@@ -55,6 +60,9 @@ class LoginRateLimitStore(private val maxPerMinute: Int) {
 
     sealed interface RateLimitResult {
         data object Allowed : RateLimitResult
-        data class Limited(val retryAfterSeconds: Int) : RateLimitResult
+
+        data class Limited(
+            val retryAfterSeconds: Int,
+        ) : RateLimitResult
     }
 }
