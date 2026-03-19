@@ -10,7 +10,7 @@ package no.battlefront.balancer.dto
 data class PlayerCreateRequest(
     val nickname: String,
     val nation: String,
-    val rating: Int
+    val rating: Int,
 )
 
 /**
@@ -27,6 +27,5 @@ data class PlayerUpdateRequest(
     val nation: String,
     val rating: Int,
     val dzrating: Int,
-    val br: Int
+    val br: Int,
 )
-

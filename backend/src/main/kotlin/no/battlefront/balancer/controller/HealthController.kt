@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class HealthController {
-
     /**
      * Health check endpoint for load balancers and monitoring.
      *

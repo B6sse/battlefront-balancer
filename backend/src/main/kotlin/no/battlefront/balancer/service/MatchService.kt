@@ -22,9 +22,8 @@ class MatchService(
     private val playerRepository: PlayerRepository,
     private val rankedPlayerStatRepository: RankedPlayerStatRepository,
     private val currentSeasonRepository: CurrentSeasonRepository,
-    private val currentUserService: CurrentUserService
+    private val currentUserService: CurrentUserService,
 ) {
-
     /**
      * Persists a match, per-player stats ([RankedMatchStat]), and updates [RankedPlayerStat][no.battlefront.balancer.model.RankedPlayerStat] for all participants.
      * Expects [MatchSubmitRequest.matchData] as list: [map, team_size, mvp_id, rebel_score, imperial_score, rule].
@@ -45,16 +44,17 @@ class MatchService(
         val rule = request.matchData[5].toString()
         val season = currentSeasonRepository.findCurrentSeason() ?: 1
 
-        val match = RankedMatch(
-            map = map,
-            rule = rule,
-            season = season,
-            teamSize = teamSize,
-            rebelScore = rebelScore,
-            imperialScore = imperialScore,
-            mvpId = mvpId,
-            supervisorId = supervisorId
-        )
+        val match =
+            RankedMatch(
+                map = map,
+                rule = rule,
+                season = season,
+                teamSize = teamSize,
+                rebelScore = rebelScore,
+                imperialScore = imperialScore,
+                mvpId = mvpId,
+                supervisorId = supervisorId,
+            )
         val savedMatch = rankedMatchRepository.save(match)
         val matchId = savedMatch.id
 
@@ -71,18 +71,20 @@ class MatchService(
                     score = p.score,
                     perf = p.perf,
                     updateBr = p.change,
-                    newBr = p.newBR
-                )
+                    newBr = p.newBR,
+                ),
             )
-            val pstat = rankedPlayerStatRepository.findByPlayerIdAndSeason(p.id, season)
-                ?: continue
+            val pstat =
+                rankedPlayerStatRepository.findByPlayerIdAndSeason(p.id, season)
+                    ?: continue
             val newBest = maxOf(pstat.best, p.newBR)
-            val (won, lost, draw) = when (p.outcome) {
-                "Won" -> Triple(1, 0, 0)
-                "Lost" -> Triple(0, 1, 0)
-                "Draw" -> Triple(0, 0, 1)
-                else -> Triple(0, 0, 0)
-            }
+            val (won, lost, draw) =
+                when (p.outcome) {
+                    "Won" -> Triple(1, 0, 0)
+                    "Lost" -> Triple(0, 1, 0)
+                    "Draw" -> Triple(0, 0, 1)
+                    else -> Triple(0, 0, 0)
+                }
             pstat.br = p.newBR
             pstat.best = newBest
             pstat.played += 1
@@ -106,8 +108,9 @@ class MatchService(
         val stats = rankedMatchStatRepository.findByMatchId(latestMatch.id)
         return stats.mapNotNull { stat ->
             val player = playerRepository.findById(stat.playerId).orElse(null) ?: return@mapNotNull null
-            val pstat = rankedPlayerStatRepository.findByPlayerIdAndSeason(stat.playerId, season)
-                ?: return@mapNotNull null
+            val pstat =
+                rankedPlayerStatRepository.findByPlayerIdAndSeason(stat.playerId, season)
+                    ?: return@mapNotNull null
             LastMatchPlayerDto(
                 id = player.id,
                 nickname = player.nickname,
@@ -120,7 +123,7 @@ class MatchService(
                 lost = pstat.lost,
                 draw = pstat.draw,
                 score = pstat.score,
-                mvp = pstat.mvp
+                mvp = pstat.mvp,
             )
         }
     }

@@ -20,5 +20,5 @@ data class PlayerMatchStatDto(
     val score: Int,
     val perf: Double,
     val change: Int,
-    @param:JsonProperty("NewBR") val newBR: Int
+    @param:JsonProperty("NewBR") val newBR: Int,
 )

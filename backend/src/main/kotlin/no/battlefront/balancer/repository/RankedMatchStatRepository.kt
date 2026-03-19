@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository
  * Spring Data JPA repository for [RankedMatchStat] (per-player stats per match).
  */
 interface RankedMatchStatRepository : JpaRepository<RankedMatchStat, Long> {
-
     /**
      * Returns all player stats for the given match.
      */

@@ -15,7 +15,7 @@ A web app for making Star Wars Battlefront 2015 more competitive with ranked pla
 
 1. **Start Postgres only**
    ```bash
-   docker compose -f docker-compose.dev.yml up -d
+   docker compose up -d postgres
    ```
 
 2. **Start backend**
@@ -42,6 +42,34 @@ docker compose up -d
 
 Stop: `docker compose down`.
 
+## Code quality (ktlint + kover)
+
+The backend uses:
+
+- **ktlint**: Kotlin formatting/style checks
+- **kover**: Kotlin test coverage reports
+
+### Run style checks (ktlint)
+
+```bash
+./gradlew :backend:ktlintCheck
+```
+
+### Auto-format Kotlin (ktlint)
+
+```bash
+./gradlew :backend:ktlintFormat
+```
+
+### Run tests with coverage (kover)
+
+```bash
+./gradlew :backend:test :backend:koverHtmlReport
+```
+
+- **HTML report**: `backend/build/reports/kover/html/index.html`
+- (Optional) XML report: `./gradlew :backend:koverXmlReport`
+
 ## Project structure
 
 ```
@@ -65,7 +93,6 @@ Stop: `docker compose down`.
 ├── docker/
 │   └── postgres/init.sql
 ├── docker-compose.yml      # Full stack
-└── docker-compose.dev.yml  # Postgres only
 ```
 
 ## Ports
@@ -83,4 +110,9 @@ The app is set up as a **Progressive Web App**: it works as a normal website and
 - **Android (Chrome):** Menu → “Add to Home screen” or “Install app”.
 - **iPhone (Safari):** Share → “Add to Home Screen”.
 
-The site uses a [web app manifest](frontend/public/manifest.webmanifest) and the relevant meta tags so the installed icon and name (“BF Balancer”) appear correctly. For best results on all devices, add PNG icons (e.g. 192×192 and 512×512) to `frontend/public/` and reference them in the manifest.
+The site uses a [web app manifest](frontend/public/manifest.webmanifest) and the relevant meta tags so the installed icon and name (“BF Balancer”) appear correctly.
+
+Recommended for best cross-device support:
+
+- Add PNG icons (e.g. 192×192 and 512×512) to `frontend/public/` and reference them in the manifest.
+- Ensure `frontend/public/favicon.svg` exists (referenced by `frontend/index.html`).

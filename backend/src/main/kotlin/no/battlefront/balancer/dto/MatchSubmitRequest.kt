@@ -11,5 +11,5 @@ package no.battlefront.balancer.dto
 data class MatchSubmitRequest(
     val matchData: List<Any>,
     val rebels: List<PlayerMatchStatDto>,
-    val imperials: List<PlayerMatchStatDto>
+    val imperials: List<PlayerMatchStatDto>,
 )

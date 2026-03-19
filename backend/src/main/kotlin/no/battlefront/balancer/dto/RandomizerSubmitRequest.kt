@@ -8,5 +8,5 @@ package no.battlefront.balancer.dto
  */
 data class RandomizerSubmitRequest(
     val map: String,
-    val rule: String
+    val rule: String,
 )

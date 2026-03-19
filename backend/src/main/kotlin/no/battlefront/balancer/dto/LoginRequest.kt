@@ -5,5 +5,5 @@ package no.battlefront.balancer.dto
  */
 data class LoginRequest(
     val username: String,
-    val password: String
+    val password: String,
 )

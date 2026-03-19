@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository
  * Spring Data JPA repository for [RankedMatch] entities.
  */
 interface RankedMatchRepository : JpaRepository<RankedMatch, Long> {
-
     /**
      * Returns matches for the given season, newest first.
      */
