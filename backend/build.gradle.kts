@@ -32,6 +32,8 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-test-autoconfigure")
+    testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("com.h2database:h2")
     implementation(kotlin("stdlib"))
 }
@@ -55,4 +57,29 @@ ktlint {
 tasks.check {
     // Ensure style checks and tests run as part of the standard verification lifecycle
     dependsOn("ktlintCheck")
+}
+
+// Load backend/.env into environment for bootRun (Spring does not load .env by itself)
+tasks.named<JavaExec>("bootRun") {
+    val envFile = file("${layout.projectDirectory.asFile}/.env")
+    if (envFile.exists()) {
+        envFile
+            .readLines()
+            .asSequence()
+            .map { it.trim() }
+            .filter { it.isNotBlank() && !it.startsWith("#") }
+            .forEach { line ->
+                val eq = line.indexOf('=')
+                if (eq > 0) {
+                    val key = line.substring(0, eq).trim()
+                    var value = line.substring(eq + 1).trim()
+                    if ((value.startsWith('"') && value.endsWith('"')) ||
+                        (value.startsWith("'") && value.endsWith("'"))
+                    ) {
+                        value = value.drop(1).dropLast(1)
+                    }
+                    environment(key, value)
+                }
+            }
+    }
 }
