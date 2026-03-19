@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 26.5.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Calque_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 1000 1000" style="enable-background:new 0 0 1000 1000;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#FF3146;}
+	.st1{fill:#00FDE8;}
+	.st2{fill:#FFFFFF;}
+</style>
+<polygon class="st0" points="525,911.4 1000,88.6 50,88.6 "/>
+<polygon class="st1" points="475,911.4 950,88.6 0,88.6 "/>
+<polygon points="500,911.4 975,88.6 25,88.6 "/>
+<g>
+	<g id="bleu">
+		<polygon class="st1" points="125,155 240.5,155 532.7,661.2 475,761.2 		"/>
+		<polygon class="st1" points="825,155 767.3,255 379,255 321.3,155 		"/>
+		<polyline class="st1" points="573.2,591.2 515.4,491.2 553.7,425 477.2,425 419.5,325 726.9,325 		"/>
+	</g>
+	<g id="rouge">
+		<polygon class="st0" points="175,155 290.5,155 582.7,661.2 525,761.2 		"/>
+		<polygon class="st0" points="875,155 817.3,255 429,255 371.3,155 		"/>
+		<polyline class="st0" points="623.2,591.2 565.4,491.2 603.7,425 527.2,425 469.5,325 776.9,325 		"/>
+	</g>
+	<g id="blanc">
+		<polygon class="st2" points="150,155 265.5,155 557.7,661.2 500,761.2 		"/>
+		<polygon class="st2" points="850,155 792.3,255 404,255 346.3,155 		"/>
+		<polyline class="st2" points="598.2,591.2 540.4,491.2 578.7,425 502.2,425 444.5,325 751.9,325 		"/>
+	</g>
+</g>
+</svg>
