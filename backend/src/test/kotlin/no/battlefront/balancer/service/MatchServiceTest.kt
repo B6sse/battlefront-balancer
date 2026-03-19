@@ -2,10 +2,10 @@ package no.battlefront.balancer.service
 
 import no.battlefront.balancer.dto.MatchSubmitRequest
 import no.battlefront.balancer.dto.PlayerMatchStatDto
+import no.battlefront.balancer.model.Player
 import no.battlefront.balancer.model.RankedMatch
 import no.battlefront.balancer.model.RankedMatchStat
 import no.battlefront.balancer.model.RankedPlayerStat
-import no.battlefront.balancer.model.Player
 import no.battlefront.balancer.repository.CurrentSeasonRepository
 import no.battlefront.balancer.repository.PlayerRepository
 import no.battlefront.balancer.repository.RankedMatchRepository
