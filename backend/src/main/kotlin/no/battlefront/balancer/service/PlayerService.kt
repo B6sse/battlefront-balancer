@@ -19,32 +19,55 @@ class PlayerService(
 ) {
     /**
      * Returns all players with their season statistics for the current season.
+     * If no stats exist for the current season (e.g. new DB or season mismatch),
+     * returns all players with zero/default stats so the list is never empty when players exist.
      *
-     * @return list of [PlayerWithStatsDto]; never null, may be empty.
+     * @return list of [PlayerWithStatsDto]; never null, may be empty only if there are no players.
      */
     fun getPlayersWithCurrentSeasonStats(): List<PlayerWithStatsDto> {
         val season = currentSeasonRepository.findCurrentSeason() ?: 1
         val stats = rankedPlayerStatRepository.findBySeason(season)
-        return stats
-            .map { stat ->
-                val player = playerRepository.findById(stat.playerId).orElse(null) ?: return@map null
-                PlayerWithStatsDto(
-                    id = player.id,
-                    nickname = player.nickname,
-                    nation = player.nation,
-                    rating = player.rating,
-                    dzrating = player.dzrating,
-                    elo = player.elo,
-                    br = stat.br,
-                    played = stat.played,
-                    best = stat.best,
-                    won = stat.won,
-                    lost = stat.lost,
-                    draw = stat.draw,
-                    score = stat.score,
-                    mvp = stat.mvp,
-                )
-            }.filterNotNull()
+        if (stats.isNotEmpty()) {
+            return stats
+                .map { stat ->
+                    val player = playerRepository.findById(stat.playerId).orElse(null) ?: return@map null
+                    PlayerWithStatsDto(
+                        id = player.id,
+                        nickname = player.nickname,
+                        nation = player.nation,
+                        rating = player.rating,
+                        dzrating = player.dzrating,
+                        elo = player.elo,
+                        br = stat.br,
+                        played = stat.played,
+                        best = stat.best,
+                        won = stat.won,
+                        lost = stat.lost,
+                        draw = stat.draw,
+                        score = stat.score,
+                        mvp = stat.mvp,
+                    )
+                }.filterNotNull()
+        }
+        // No stats for current season: return all players with zero stats so UI shows them
+        return playerRepository.findAll().map { player ->
+            PlayerWithStatsDto(
+                id = player.id,
+                nickname = player.nickname,
+                nation = player.nation,
+                rating = player.rating,
+                dzrating = player.dzrating,
+                elo = player.elo,
+                br = 0,
+                played = 0,
+                best = 0,
+                won = 0,
+                lost = 0,
+                draw = 0,
+                score = 0,
+                mvp = 0,
+            )
+        }
     }
 
     /**

@@ -11,8 +11,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 
@@ -42,6 +44,45 @@ class PlayerServiceTest {
         val result = service.getPlayersWithCurrentSeasonStats()
 
         assertEquals(0, result.size)
+    }
+
+    @Test
+    fun `getPlayersWithCurrentSeasonStats returns players with zero stats when no stats for current season`() {
+        `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(3)
+        `when`(rankedPlayerStatRepository.findBySeason(3)).thenReturn(emptyList())
+
+        val p1 =
+            Player(
+                id = 1L,
+                nickname = "P1",
+                nation = "no",
+                rating = 50,
+                dzrating = 50,
+                elo = 10,
+            )
+        val p2 =
+            Player(
+                id = 2L,
+                nickname = "P2",
+                nation = "us",
+                rating = 70,
+                dzrating = 70,
+                elo = 20,
+            )
+        `when`(playerRepository.findAll()).thenReturn(listOf(p1, p2))
+
+        val result = service.getPlayersWithCurrentSeasonStats()
+
+        assertEquals(2, result.size)
+        assertEquals(1L, result[0].id)
+        assertEquals("P1", result[0].nickname)
+        assertEquals(50, result[0].rating)
+        assertEquals(0, result[0].br)
+        assertEquals(0, result[0].played)
+        assertEquals(0, result[0].best)
+        assertEquals(0, result[0].mvp)
+        assertEquals(0, result[0].score)
+        assertEquals(2L, result[1].id)
     }
 
     /**
@@ -110,6 +151,54 @@ class PlayerServiceTest {
         assertEquals("no", result.nation)
         assertEquals(65, result.rating)
         verify(rankedPlayerStatRepository).save(any(RankedPlayerStat::class.java))
+    }
+
+    @Test
+    fun `createPlayer derives BR buckets for mid ranges`() {
+        `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
+        `when`(playerRepository.save(any(Player::class.java))).thenAnswer { it.getArgument(0) }
+        `when`(rankedPlayerStatRepository.save(any(RankedPlayerStat::class.java))).thenAnswer { it.getArgument(0) }
+
+        val statCaptor = ArgumentCaptor.forClass(RankedPlayerStat::class.java)
+
+        // rating <=71 -> 850
+        val p71 = service.createPlayer(PlayerCreateRequest(nickname = "A", nation = "no", rating = 71))
+        assertEquals("A", p71.nickname)
+
+        // rating <=78 -> 900
+        val p78 = service.createPlayer(PlayerCreateRequest(nickname = "B", nation = "no", rating = 78))
+        assertEquals("B", p78.nickname)
+
+        // rating <=86 -> 950
+        val p86 = service.createPlayer(PlayerCreateRequest(nickname = "C", nation = "no", rating = 86))
+        assertEquals("C", p86.nickname)
+
+        // rating <=89 -> 1000 (covers remaining bucket arms)
+        val p89 = service.createPlayer(PlayerCreateRequest(nickname = "D", nation = "no", rating = 89))
+        assertEquals("D", p89.nickname)
+
+        verify(rankedPlayerStatRepository, times(4)).save(statCaptor.capture())
+        val brs = statCaptor.allValues.map { it.br }
+        val bests = statCaptor.allValues.map { it.best }
+
+        assertEquals(listOf(850, 900, 950, 1000), brs)
+        assertEquals(brs, bests)
+    }
+
+    @Test
+    fun `createPlayer else bucket rating over 89 derives BR 1050`() {
+        `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
+        `when`(playerRepository.save(any(Player::class.java))).thenAnswer { it.getArgument(0) }
+        `when`(rankedPlayerStatRepository.save(any(RankedPlayerStat::class.java))).thenAnswer { it.getArgument(0) }
+
+        val statCaptor = ArgumentCaptor.forClass(RankedPlayerStat::class.java)
+
+        val result = service.createPlayer(PlayerCreateRequest(nickname = "E", nation = "no", rating = 99))
+        assertEquals("E", result.nickname)
+
+        verify(rankedPlayerStatRepository).save(statCaptor.capture())
+        assertEquals(1050, statCaptor.value.br)
+        assertEquals(1050, statCaptor.value.best)
     }
 
     /**
@@ -199,6 +288,26 @@ class PlayerServiceTest {
         assertEquals("Updated", result.nickname)
         assertEquals("no", result.nation)
         assertEquals(900, stats.br)
+    }
+
+    @Test
+    fun `updatePlayer throws when season stats are missing`() {
+        val player = Player(id = 2L, nickname = "Old", nation = "us", rating = 70, dzrating = 70, elo = 850)
+        `when`(playerRepository.findById(2L)).thenReturn(java.util.Optional.of(player))
+        `when`(playerRepository.save(any(Player::class.java))).thenAnswer { it.getArgument(0) }
+        `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
+        `when`(rankedPlayerStatRepository.findByPlayerIdAndSeason(2L, 1)).thenReturn(null)
+
+        val request =
+            PlayerUpdateRequest(
+                nickname = "Updated",
+                nation = "no",
+                rating = 72,
+                dzrating = 72,
+                br = 900,
+            )
+
+        assertThrows<IllegalStateException> { service.updatePlayer(2L, request) }
     }
 
     /**

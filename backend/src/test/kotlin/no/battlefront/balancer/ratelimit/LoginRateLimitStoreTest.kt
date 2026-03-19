@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * JUnit test class for [LoginRateLimitStore].
@@ -81,5 +83,43 @@ class LoginRateLimitStoreTest {
         val r2 = store.tryAcquire("client-B")
         assertInstanceOf(LoginRateLimitStore.RateLimitResult.Allowed::class.java, r1)
         assertInstanceOf(LoginRateLimitStore.RateLimitResult.Allowed::class.java, r2)
+    }
+
+    @Test
+    fun `tryAcquire resets the window when elapsed reaches WINDOW_MILLIS`() {
+        val store = LoginRateLimitStore(maxPerMinute = 1)
+        val key = "client-reset"
+
+        // Create an initial window entry.
+        store.tryAcquire(key)
+
+        val windowsField = store.javaClass.getDeclaredField("windows")
+        windowsField.isAccessible = true
+
+        @Suppress("UNCHECKED_CAST")
+        val windows =
+            windowsField.get(store) as ConcurrentHashMap<String, AtomicReference<Any>>
+
+        val atomicRef = windows[key] ?: error("Window entry not found for key=$key")
+
+        // Access the private nested data class `Window(startMillis: Long, count: Int)`.
+        val windowClass = store.javaClass.declaredClasses.first { it.simpleName == "Window" }
+        val ctor =
+            windowClass.getDeclaredConstructor(
+                java.lang.Long.TYPE,
+                Integer.TYPE,
+            )
+        ctor.isAccessible = true
+
+        val now = System.currentTimeMillis()
+        // Force elapsed >= 60s window to exercise the `Window(now, 1)` branch.
+        val oldStartMillis = now - 61_000L
+        val overLimitCount = 10 // would be Limited if the reset branch wasn't taken
+
+        val forcedOldWindow = ctor.newInstance(oldStartMillis, overLimitCount)
+        atomicRef.set(forcedOldWindow)
+
+        val result = store.tryAcquire(key)
+        assertInstanceOf(LoginRateLimitStore.RateLimitResult.Allowed::class.java, result)
     }
 }
