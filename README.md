@@ -1,6 +1,8 @@
 # Battlefront Balancer
 
-A web app for making Star Wars Battlefront 2015 more competitive with ranked play and ratings for balanced matches.
+A web app for making Star Wars Battlefront 2015 more competitive with ranked play and ratings for balanced matches. Check it out here:
+
+https://battlefront-balancer.eu/ 
 
 ## Tech stack
 
@@ -69,50 +71,3 @@ The backend uses:
 
 - **HTML report**: `backend/build/reports/kover/html/index.html`
 - (Optional) XML report: `./gradlew :backend:koverXmlReport`
-
-## Project structure
-
-```
-├── backend/          # Spring Boot (Kotlin)
-│   ├── src/main/kotlin/no/battlefront/balancer/
-│   │   ├── controller/
-│   │   ├── service/
-│   │   ├── repository/
-│   │   ├── model/
-│   │   └── BattlefrontBalancerApplication.kt
-│   └── Dockerfile
-├── frontend/          # Vite + React + TypeScript + SCSS
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── hooks/
-│   │   ├── api/
-│   │   ├── types/
-│   │   └── styles/
-│   └── Dockerfile
-├── docker/
-│   └── postgres/init.sql
-├── docker-compose.yml      # Full stack
-```
-
-## Ports
-
-| Service   | Development | Docker |
-|----------|-------------|--------|
-| Frontend | 5173        | 80     |
-| Backend  | 8080        | 8080   |
-| Postgres | 5432        | 5432   |
-
-## PWA (Add to Home Screen)
-
-The app is set up as a **Progressive Web App**: it works as a normal website and can also be added to the home screen on iPhone and Android.
-
-- **Android (Chrome):** Menu → “Add to Home screen” or “Install app”.
-- **iPhone (Safari):** Share → “Add to Home Screen”.
-
-The site uses a [web app manifest](frontend/public/manifest.webmanifest) and the relevant meta tags so the installed icon and name (“BF Balancer”) appear correctly.
-
-Recommended for best cross-device support:
-
-- Add PNG icons (e.g. 192×192 and 512×512) to `frontend/public/` and reference them in the manifest.
-- Ensure `frontend/public/favicon.svg` exists (referenced by `frontend/index.html`).
