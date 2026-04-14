@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { NavLink } from 'react-router-dom'
 import burgerUrl from '../assets/images/SVG/burger.svg'
 import crossUrl from '../assets/images/SVG/cross.svg'
 import adminIcon from '../assets/images/dune_sea_exchange.jpg'
@@ -25,6 +26,9 @@ export function Header() {
     document.body.removeAttribute('data-menu')
   }, [])
 
+  const navClass = ({ isActive }: { isActive: boolean }) =>
+    `link nav__element--link sound__hover sound__click${isActive ? ' nav__element--active' : ''}`
+
   return (
     <header className="header">
       <div className="container">
@@ -40,7 +44,7 @@ export function Header() {
                 <div className="admin__status admin__status--disconnected" />
               </div>
             </div>
-            <a className="link btn btn--login icon--login" href="/login" aria-label="Log in" />
+            <NavLink className="link btn btn--login icon--login sound__hover sound__click" to="/login" aria-label="Log in" />
           </div>
           <button
             type="button"
@@ -59,24 +63,24 @@ export function Header() {
         <nav className="nav">
           <ul className="list nav__list">
             <li className="nav__element">
-              <a className="link nav__element--link nav__element--active" href="/" onClick={closeMenu}>
+              <NavLink end className={navClass} to="/" onClick={closeMenu}>
                 Play
-              </a>
+              </NavLink>
             </li>
             <li className="nav__element">
-              <a className="link nav__element--link" href="/matches" onClick={closeMenu}>
+              <NavLink className={navClass} to="/matches" onClick={closeMenu}>
                 Matches
-              </a>
+              </NavLink>
             </li>
             <li className="nav__element">
-              <a className="link nav__element--link" href="/stats" onClick={closeMenu}>
+              <NavLink className={navClass} to="/stats" onClick={closeMenu}>
                 Stats
-              </a>
+              </NavLink>
             </li>
             <li className="nav__element">
-              <a className="link nav__element--link" href="/about" onClick={closeMenu}>
+              <NavLink className={navClass} to="/about" onClick={closeMenu}>
                 About
-              </a>
+              </NavLink>
             </li>
           </ul>
         </nav>
