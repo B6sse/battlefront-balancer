@@ -857,3 +857,97 @@ body[data-menu] .btn--menu {
     grid-column: 12 / 16;
   }
 }
+
+/* ── About / Credits page ── */
+
+.section--credits .container {
+  display: grid;
+  grid-template-columns: var(--grid-column);
+  gap: 10px;
+  padding: var(--container-padding);
+}
+
+.section--credits .title {
+  margin-bottom: 20px;
+}
+
+.author {
+  grid-column: 1 / -1;
+}
+
+.author__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.author__list li {
+  width: 100%;
+}
+
+.author__content {
+  grid-column: 1 / -1;
+}
+
+.author__tabs {
+  display: none;
+}
+
+.author__tabs--active {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
+
+.btn--width {
+  background-color: var(--panel-background);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: var(--panel-blur);
+  border-radius: var(--panel-radius);
+  letter-spacing: 0.5px;
+  padding: 10px 20px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+
+.btn--width:hover {
+  background-color: var(--color-darkgrey);
+  outline: 5px solid var(--color-yellow);
+  color: #a1a09e;
+}
+
+.btn--active {
+  background-color: var(--color-darkgrey);
+  color: var(--color-white);
+}
+
+.feedback {
+  grid-column: 1 / -1;
+  margin-top: 70px;
+}
+
+@media (min-width: 768px) {
+  .author {
+    grid-column: 1 / 3;
+  }
+
+  .author__content {
+    grid-column: 4 / 10;
+  }
+
+  .feedback {
+    grid-column: 1 / 10;
+  }
+}
+
+@media (min-width: 1440px) {
+  .author__content {
+    grid-column: 4 / 9;
+  }
+
+  .feedback {
+    grid-column: 1 / 9;
+  }
+}
