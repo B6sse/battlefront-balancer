@@ -1,5 +1,34 @@
 // Fellestypedefinisjoner for frontend
 
+export interface MatchSummary {
+  id: number
+  date: string
+  map: string
+  rule: string
+  teamSize: number
+  mvpName: string | null
+  supervisorName: string | null
+}
+
+export interface MatchPlayerStat {
+  nickname: string
+  nation: string
+  score: number
+  updateBr: number
+  newBr: number
+  perf: number
+}
+
+export interface MatchDetail {
+  id: number
+  rebelScore: number
+  imperialScore: number
+  teamSize: number
+  rebels: MatchPlayerStat[]
+  imperials: MatchPlayerStat[]
+}
+
+
 export interface HealthStatus {
   status: string
 }

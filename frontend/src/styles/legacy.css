@@ -700,6 +700,24 @@ body[data-menu] .btn--menu {
   grid-column: 4 / 8;
 }
 
+.creator__element {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.creator__badge {
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: var(--panel-radius);
+  border: 1px solid var(--color-grey);
+  color: var(--color-grey);
+  line-height: 1.4;
+}
+
 .footer__bottom {
   padding-top: 20px;
   border-top: 1px solid var(--color-grey);
@@ -858,46 +876,162 @@ body[data-menu] .btn--menu {
   }
 }
 
-/* ── About / Credits page ── */
+/* ── Matches page ── */
 
-.section--credits .container {
+.section--match .container {
   display: grid;
   grid-template-columns: var(--grid-column);
   gap: 10px;
   padding: var(--container-padding);
 }
 
-.section--credits .title {
-  margin-bottom: 20px;
+.season__selector {
+  margin-bottom: 10px;
 }
 
-.author {
+.season__list {
+  display: inline-flex;
+  column-gap: 5px;
+  background-color: var(--panel-background);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: var(--panel-blur);
+  border-radius: var(--panel-radius);
+  font-size: var(--font-small);
+}
+
+.season__list .btn {
+  padding: 5px 15px;
+}
+
+.season__list li:first-child .btn {
+  border-radius: var(--panel-radius) 0 0 var(--panel-radius);
+}
+
+.season__list li:last-child .btn {
+  border-radius: 0 var(--panel-radius) var(--panel-radius) 0;
+}
+
+.season__list .btn:hover,
+.season__list .btn:focus {
+  outline: 5px solid var(--color-yellow);
+}
+
+.season__list .btn--active {
+  background-color: var(--color-darkgrey);
+  color: var(--color-white);
+  z-index: 0;
+}
+
+.team__gamemode,
+.team__match {
   grid-column: 1 / -1;
 }
 
-.author__list {
+.team__1,
+.team__2 {
+  min-width: 100%;
+}
+
+.team__rebel,
+.team__imperial {
+  background-color: var(--panel-background);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: var(--panel-blur);
+  border-radius: var(--panel-radius);
+  min-height: 257.78px;
+}
+
+.team__rebel .team__info {
+  color: var(--color-blue);
+}
+
+.team__imperial .team__info {
+  color: var(--color-red);
+}
+
+.team__info {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.author__list li {
-  width: 100%;
-}
-
-.author__content {
-  grid-column: 1 / -1;
-}
-
-.author__tabs {
-  display: none;
-}
-
-.author__tabs--active {
-  display: flex;
-  flex-direction: column;
   justify-content: space-between;
-  height: 100%;
+  padding: 20px;
+}
+
+.team__counter {
+  line-height: 1;
+  font-weight: 500;
+  font-size: var(--title-sm);
+  letter-spacing: 1px;
+}
+
+.match__selected td {
+  background-color: var(--color-yellow);
+}
+
+.center {
+  position: relative;
+  height: max-content;
+  grid-column: 1 / 3;
+  display: flex;
+  justify-content: center;
+}
+
+.vertical {
+  display: flex;
+  align-items: center;
+}
+
+.result {
+  background-color: var(--panel-background);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: var(--panel-blur);
+  display: flex;
+  gap: 80px;
+  border-radius: 70px;
+  padding: 10px;
+}
+
+.score {
+  position: absolute;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  text-align: center;
+  height: 40px;
+  width: 40px;
+  border-radius: 50%;
+  color: var(--color-white);
+  font-weight: 600;
+  font-size: var(--title-sm);
+  display: flex;
+  justify-content: center;
+  padding: 0;
+}
+
+.circle {
+  position: absolute;
+}
+
+@media (min-width: 768px) {
+  .team__match {
+    grid-column: 7 / 12;
+    margin-top: 42px;
+  }
+
+  .team__rebel,
+  .team__imperial {
+    min-height: 268.2px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .team {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: max-content;
+  }
+
+  .team__match {
+    grid-column: 8 / 16;
+  }
 }
 
 .btn--width {
@@ -921,33 +1055,4 @@ body[data-menu] .btn--menu {
 .btn--active {
   background-color: var(--color-darkgrey);
   color: var(--color-white);
-}
-
-.feedback {
-  grid-column: 1 / -1;
-  margin-top: 70px;
-}
-
-@media (min-width: 768px) {
-  .author {
-    grid-column: 1 / 3;
-  }
-
-  .author__content {
-    grid-column: 4 / 10;
-  }
-
-  .feedback {
-    grid-column: 1 / 10;
-  }
-}
-
-@media (min-width: 1440px) {
-  .author__content {
-    grid-column: 4 / 9;
-  }
-
-  .feedback {
-    grid-column: 1 / 9;
-  }
 }
