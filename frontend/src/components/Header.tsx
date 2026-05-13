@@ -77,11 +77,6 @@ export function Header() {
                 Stats
               </NavLink>
             </li>
-            <li className="nav__element">
-              <NavLink className={navClass} to="/about" onClick={closeMenu}>
-                About
-              </NavLink>
-            </li>
           </ul>
         </nav>
       </div>

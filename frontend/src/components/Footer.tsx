@@ -36,16 +36,17 @@ export function Footer() {
             <li className="menu__element">
               <a className="link" href="/stats">Stats</a>
             </li>
-            <li className="menu__element">
-              <a className="link" href="/about">About</a>
-            </li>
           </ul>
         </div>
         <div className="footer__creator">
           <small className="footer__title">Creators</small>
           <ul className="list creator__list">
-            <li className="creator__element">Tango</li>
-            <li className="creator__element">Basse</li>
+            <li className="creator__element">
+              Tango <span className="creator__badge">Frontend</span>
+            </li>
+            <li className="creator__element">
+              Basse <span className="creator__badge">Backend</span>
+            </li>
           </ul>
         </div>
         <div className="footer__bottom">

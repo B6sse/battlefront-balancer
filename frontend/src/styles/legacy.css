@@ -922,9 +922,15 @@ body[data-menu] .btn--menu {
   z-index: 0;
 }
 
+.team {
+  display: flex;
+  flex-direction: column;
+  gap: 20px 10px;
+}
+
 .team__gamemode,
 .team__match {
-  grid-column: 1 / -1;
+  grid-column: 1 / 8;
 }
 
 .team__1,
@@ -1003,6 +1009,7 @@ body[data-menu] .btn--menu {
   font-size: var(--title-sm);
   display: flex;
   justify-content: center;
+  align-items: center;
   padding: 0;
 }
 
