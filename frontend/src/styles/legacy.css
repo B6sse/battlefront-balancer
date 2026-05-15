@@ -1063,3 +1063,137 @@ body[data-menu] .btn--menu {
   background-color: var(--color-darkgrey);
   color: var(--color-white);
 }
+
+/* Stats page */
+.table__match { max-height: 167px !important; }
+.table__scroll:has(.table__stats) { height: 167px; }
+
+.section--stats .container {
+  display: grid;
+  gap: 40px 10px;
+  grid-template-columns: var(--grid-column);
+  padding: var(--container-padding);
+}
+
+.tabs {
+  grid-column: 1 / 8;
+  display: flex;
+  flex-direction: column;
+  row-gap: 10px;
+}
+
+.stats {
+  grid-column: 1 / 8;
+  display: flex;
+  flex-direction: column;
+  row-gap: 40px;
+}
+
+.stats .title--large { text-align: center; margin: 0 0 20px 0; }
+
+.bar {
+  width: 100%;
+  border-radius: 20px;
+  height: 20px;
+  background-color: var(--panel-background);
+  backdrop-filter: var(--panel-blur);
+}
+
+.list__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.list__stats li { text-align: center; }
+
+.stat { font-size: var(--font-body); font-weight: 600; }
+
+.stats__player ul { display: flex; column-gap: 20px; justify-content: center; }
+.stats__nation { height: 30px; border-radius: var(--panel-radius); }
+
+.stats__games { display: flex; column-gap: 20px; }
+.stats__won, .stats__lost, .stats__draw { width: 100%; }
+
+.stats__games .title--extrasmall {
+  font-size: var(--font-body);
+  text-transform: uppercase;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.stats__bar {
+  position: relative;
+  background-color: #DDD;
+  backdrop-filter: var(--panel-blur);
+  border-radius: var(--panel-radius);
+  height: 200px;
+  overflow: hidden;
+}
+
+.stats__progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #333;
+}
+
+.stats__percent {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: var(--title-md);
+  font-weight: 500;
+  color: var(--color-white);
+  mix-blend-mode: difference;
+}
+
+.matches {
+  grid-column: 1 / 8;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.graph {
+  background-color: var(--panel-background);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: var(--panel-blur);
+  border-radius: var(--panel-radius);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.blue { background-color: #0F98D380 !important; }
+.green { background-color: #87C95B80 !important; }
+.red { background-color: #DA180F80 !important; }
+
+@media (min-width: 768px) {
+  .table__scroll:has(.table__stats) { height: 174.5px; }
+  .table__match { max-height: 174.5px !important; }
+  .tabs { grid-column: 1 / 6; }
+  .stats { grid-column: 6 / 12; padding: 0 20px; }
+  .matches { grid-column: 1 / 12; display: grid; grid-template-columns: repeat(11, 1fr); }
+  .graph { padding: 20px; grid-column: 1 / 6; }
+  .matches .table__list { grid-column: 6 / 12; }
+}
+
+@media (min-width: 992px) { .stats { padding: 0 40px; } }
+
+@media (min-width: 1216px) { .stats { padding: 0 60px; } }
+
+@media (min-width: 1440px) {
+  .table__scroll:has(.table__stats) { height: 182px; }
+  .table__match { max-height: 182px !important; }
+  .tabs { grid-column: 1 / 6; }
+  .stats { grid-column: 6 / 11; padding: 0 20px; }
+  .matches { grid-column: 11 / 16; display: flex; flex-direction: column; }
+}
+
+@media (min-width: 1600px) { .stats { padding: 0 45px; } }
+
+@media (min-width: 1720px) { .stats { padding: 0 70px; } }
