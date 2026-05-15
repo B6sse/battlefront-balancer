@@ -155,7 +155,7 @@ export function HomePage() {
               <div className="table__info">
                 <h2 className="title title--small">Players</h2>
                 <div className="table__gamemode">
-                  <div className="btn--mode btn--switch">
+                  <div className="btn--mode btn--switch sound__hover sound__click">
                     <input
                       type="checkbox"
                       id="switch"
@@ -188,7 +188,7 @@ export function HomePage() {
                     {viewMode === 'intern' ? (
                       <tr>
                         <th
-                          className="head__cell head__cell--sorting head__player head__xxl"
+                          className="head__cell head__cell--sorting head__player head__xxl sound__hover sound__click"
                           onClick={() => onSort(0)}
                           role="button"
                           tabIndex={0}
@@ -199,7 +199,7 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 1 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 1 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(1)}
                           role="button"
                           tabIndex={0}
@@ -210,7 +210,7 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 2 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 2 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(2)}
                           role="button"
                           tabIndex={0}
@@ -224,7 +224,7 @@ export function HomePage() {
                     ) : (
                       <tr>
                         <th
-                          className="head__cell head__cell--sorting head__player head__xxl"
+                          className="head__cell head__cell--sorting head__player head__xxl sound__hover sound__click"
                           onClick={() => onSort(0)}
                           role="button"
                           tabIndex={0}
@@ -235,7 +235,7 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 1 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 1 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(1)}
                           role="button"
                           tabIndex={0}
@@ -246,7 +246,7 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 2 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 2 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(2)}
                           role="button"
                           tabIndex={0}
@@ -257,7 +257,7 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 3 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 3 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(3)}
                           role="button"
                           tabIndex={0}
@@ -268,7 +268,7 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 4 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 4 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(4)}
                           role="button"
                           tabIndex={0}
@@ -279,7 +279,7 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 5 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 5 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(5)}
                           role="button"
                           tabIndex={0}
@@ -366,7 +366,7 @@ export function HomePage() {
             </div>
           </div>
           <div className="gamemode">
-            <a className="link" href="/intern">
+            <a className="link sound__hover sound__click" href="/intern">
               <div className="gamemode__intern">
                 <div className="gamemode__info">
                   <h3 className="title title--medium">Intern</h3>
@@ -379,7 +379,7 @@ export function HomePage() {
                 />
               </div>
             </a>
-            <a className="link" href="/ranked">
+            <a className="link sound__hover sound__click" href="/ranked">
               <div className="gamemode__ranked">
                 <div className="gamemode__info">
                   <h3 className="title title--medium">Ranked</h3>
@@ -394,7 +394,7 @@ export function HomePage() {
             </a>
           </div>
           <a
-            className="btn btn--grey btn--partner"
+            className="btn btn--grey btn--partner sound__hover sound__click"
             href="https://discord.gg/SzKvdReAMH"
             target="_blank"
             rel="noopener noreferrer"

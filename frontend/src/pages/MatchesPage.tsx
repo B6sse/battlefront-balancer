@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { getSeasons, getMatchList, getMatchDetail } from '../api/matches'
 import type { MatchDetail, MatchSummary } from '../types'
 
@@ -105,10 +106,14 @@ function MatchStatTable({ title, teamSize, players, colorClass }: MatchStatTable
 }
 
 export function MatchesPage() {
+  const [searchParams] = useSearchParams()
+  const linkedMatchId = searchParams.get('match') ? Number(searchParams.get('match')) : null
+  const linkedSeason = searchParams.get('season') ?? null
+
   const [seasons, setSeasons] = useState<number[]>([])
-  const [activeSeason, setActiveSeason] = useState<string | null>(null)
+  const [activeSeason, setActiveSeason] = useState<string | null>(linkedSeason)
   const [matches, setMatches] = useState<MatchSummary[]>([])
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selectedId, setSelectedId] = useState<number | null>(linkedMatchId)
   const [detail, setDetail] = useState<MatchDetail | null>(null)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -130,8 +135,9 @@ export function MatchesPage() {
     getMatchList(activeSeason ?? undefined)
       .then((data) => {
         setMatches(data)
-        // Auto-select first match
-        if (data.length > 0) {
+        if (linkedMatchId && data.some((m) => m.id === linkedMatchId)) {
+          setSelectedId(linkedMatchId)
+        } else if (data.length > 0) {
           setSelectedId(data[0].id)
         }
       })
@@ -233,7 +239,7 @@ export function MatchesPage() {
                       filteredMatches.map((m) => (
                         <tr
                           key={m.id}
-                          className={`sound__hover${selectedId === m.id ? ' match__selected' : ''}`}
+                          className={`sound__hover sound__click${selectedId === m.id ? ' match__selected' : ''}`}
                           onClick={() => setSelectedId(m.id)}
                           style={{ cursor: 'pointer' }}
                         >
