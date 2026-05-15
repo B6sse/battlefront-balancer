@@ -44,8 +44,9 @@ class MatchController(
         @PathVariable id: Long,
         @RequestParam(required = false) season: String?,
     ): ResponseEntity<MatchDetailDto> {
-        val detail = matchService.getMatchDetail(id, season)
-            ?: return ResponseEntity.notFound().build()
+        val detail =
+            matchService.getMatchDetail(id, season)
+                ?: return ResponseEntity.notFound().build()
         return ResponseEntity.ok(detail)
     }
 

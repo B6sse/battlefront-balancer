@@ -44,15 +44,16 @@ class MatchService(
      * - [season] numeric string → that season
      */
     fun getMatchList(season: String?): List<MatchSummaryDto> {
-        val matches = when {
-            season == "all" -> rankedMatchRepository.findAllByOrderByIdDesc()
-            season != null && season.isNotBlank() ->
-                rankedMatchRepository.findBySeasonOrderByIdDesc(season.toInt())
-            else -> {
-                val current = currentSeasonRepository.findCurrentSeason() ?: 1
-                rankedMatchRepository.findBySeasonOrderByIdDesc(current)
+        val matches =
+            when {
+                season == "all" -> rankedMatchRepository.findAllByOrderByIdDesc()
+                season != null && season.isNotBlank() ->
+                    rankedMatchRepository.findBySeasonOrderByIdDesc(season.toInt())
+                else -> {
+                    val current = currentSeasonRepository.findCurrentSeason() ?: 1
+                    rankedMatchRepository.findBySeasonOrderByIdDesc(current)
+                }
             }
-        }
         return matches.map { m ->
             val mvpName = m.mvpId?.let { playerRepository.findById(it).orElse(null)?.nickname }
             val supervisorName = userRepository.findById(m.supervisorId).orElse(null)?.username
@@ -73,20 +74,24 @@ class MatchService(
      * - [matchId] null → latest match for the effective season
      * - [season] null or blank → current season; "all" → any season (ignores season filter)
      */
-    fun getMatchDetail(matchId: Long?, season: String?): MatchDetailDto? {
-        val match: RankedMatch = if (matchId != null) {
-            rankedMatchRepository.findById(matchId).orElse(null) ?: return null
-        } else {
-            when {
-                season == "all" -> rankedMatchRepository.findTop1ByOrderByIdDesc()
-                season != null && season.isNotBlank() ->
-                    rankedMatchRepository.findTop1BySeasonOrderByIdDesc(season.toInt())
-                else -> {
-                    val current = currentSeasonRepository.findCurrentSeason() ?: 1
-                    rankedMatchRepository.findTop1BySeasonOrderByIdDesc(current)
-                }
-            } ?: return null
-        }
+    fun getMatchDetail(
+        matchId: Long?,
+        season: String?,
+    ): MatchDetailDto? {
+        val match: RankedMatch =
+            if (matchId != null) {
+                rankedMatchRepository.findById(matchId).orElse(null) ?: return null
+            } else {
+                when {
+                    season == "all" -> rankedMatchRepository.findTop1ByOrderByIdDesc()
+                    season != null && season.isNotBlank() ->
+                        rankedMatchRepository.findTop1BySeasonOrderByIdDesc(season.toInt())
+                    else -> {
+                        val current = currentSeasonRepository.findCurrentSeason() ?: 1
+                        rankedMatchRepository.findTop1BySeasonOrderByIdDesc(current)
+                    }
+                } ?: return null
+            }
 
         val stats = rankedMatchStatRepository.findByMatchId(match.id)
         val rebels = mutableListOf<MatchPlayerStatDto>()
@@ -94,26 +99,29 @@ class MatchService(
 
         for (stat in stats) {
             val player = playerRepository.findById(stat.playerId).orElse(null) ?: continue
-            val dto = MatchPlayerStatDto(
-                nickname = player.nickname,
-                nation = player.nation,
-                score = stat.score,
-                updateBr = stat.updateBr,
-                newBr = stat.newBr,
-                perf = stat.perf,
-            )
+            val dto =
+                MatchPlayerStatDto(
+                    nickname = player.nickname,
+                    nation = player.nation,
+                    score = stat.score,
+                    updateBr = stat.updateBr,
+                    newBr = stat.newBr,
+                    perf = stat.perf,
+                )
             if (stat.faction == "Rebel") rebels.add(dto) else imperials.add(dto)
         }
 
+        val comparator = compareByDescending<MatchPlayerStatDto> { it.updateBr }.thenByDescending { it.score }
         return MatchDetailDto(
             id = match.id,
             rebelScore = match.rebelScore,
             imperialScore = match.imperialScore,
             teamSize = match.teamSize,
-            rebels = rebels,
-            imperials = imperials,
+            rebels = rebels.sortedWith(comparator),
+            imperials = imperials.sortedWith(comparator),
         )
     }
+
     /**
      * Persists a match, per-player stats ([RankedMatchStat]), and updates [RankedPlayerStat][no.battlefront.balancer.model.RankedPlayerStat] for all participants.
      * Expects [MatchSubmitRequest.matchData] as list: [map, team_size, mvp_id, rebel_score, imperial_score, rule].
