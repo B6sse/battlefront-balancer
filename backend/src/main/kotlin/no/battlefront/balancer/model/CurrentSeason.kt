@@ -15,7 +15,7 @@ import jakarta.persistence.Table
 class CurrentSeason(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Int = 0,
+    val id: Long = 0,
     @Column(nullable = false)
     var season: Int = 0,
 )

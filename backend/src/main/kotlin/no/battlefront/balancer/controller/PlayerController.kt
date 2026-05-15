@@ -1,6 +1,7 @@
 package no.battlefront.balancer.controller
 
 import no.battlefront.balancer.dto.PlayerCreateRequest
+import no.battlefront.balancer.dto.PlayerMatchHistoryDto
 import no.battlefront.balancer.dto.PlayerUpdateRequest
 import no.battlefront.balancer.dto.PlayerWithStatsDto
 import no.battlefront.balancer.service.PlayerService
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -20,12 +22,23 @@ class PlayerController(
     private val playerService: PlayerService,
 ) {
     /**
-     * Returns all players with their season statistics for the current season.
-     *
-     * @return [ResponseEntity] containing a list of [PlayerWithStatsDto]; never null.
+     * Returns players with stats for the given season.
+     * Omit season for current season, pass "all" for aggregated all-seasons view.
      */
     @GetMapping("/players")
-    fun getPlayers(): ResponseEntity<List<PlayerWithStatsDto>> = ResponseEntity.ok(playerService.getPlayersWithCurrentSeasonStats())
+    fun getPlayers(
+        @RequestParam(required = false) season: String?,
+    ): ResponseEntity<List<PlayerWithStatsDto>> = ResponseEntity.ok(playerService.getPlayersWithSeasonStats(season))
+
+    /**
+     * Returns the match history for a player, newest first.
+     * Omit season for current season, pass "all" for all seasons.
+     */
+    @GetMapping("/players/{id}/matches")
+    fun getPlayerMatchHistory(
+        @PathVariable id: Long,
+        @RequestParam(required = false) season: String?,
+    ): ResponseEntity<List<PlayerMatchHistoryDto>> = ResponseEntity.ok(playerService.getPlayerMatchHistory(id, season))
 
     /**
      * Creates a new player and initial season stats for the current season.
@@ -46,10 +59,6 @@ class PlayerController(
 
     /**
      * Updates an existing player and their BR for the current season.
-     *
-     * @param id the player's primary key.
-     * @param request the updated player data and new BR.
-     * @return [ResponseEntity] with the saved [Player][no.battlefront.balancer.model.Player] on success, or 400 with error message on failure.
      */
     @PutMapping("/players/{id}")
     fun updatePlayer(
@@ -67,9 +76,6 @@ class PlayerController(
 
     /**
      * Deletes a player by id. Related season stats are removed via cascade.
-     *
-     * @param id the player's primary key.
-     * @return [ResponseEntity] with 204 No Content on success.
      */
     @DeleteMapping("/players/{id}")
     fun deletePlayer(

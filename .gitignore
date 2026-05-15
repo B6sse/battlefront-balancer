@@ -60,4 +60,7 @@ frontend/.npm
 docs/
 
 # reference code
-workflow 
+workflow
+
+# AI
+CLAUDE.md

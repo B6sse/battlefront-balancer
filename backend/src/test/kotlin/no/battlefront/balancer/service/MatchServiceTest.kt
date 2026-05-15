@@ -11,6 +11,7 @@ import no.battlefront.balancer.repository.PlayerRepository
 import no.battlefront.balancer.repository.RankedMatchRepository
 import no.battlefront.balancer.repository.RankedMatchStatRepository
 import no.battlefront.balancer.repository.RankedPlayerStatRepository
+import no.battlefront.balancer.repository.UserRepository
 import no.battlefront.balancer.security.CurrentUserService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -38,6 +39,7 @@ class MatchServiceTest {
         mock(RankedPlayerStatRepository::class.java)
     private val currentSeasonRepository: CurrentSeasonRepository = mock(CurrentSeasonRepository::class.java)
     private val currentUserService: CurrentUserService = mock(CurrentUserService::class.java)
+    private val userRepository: UserRepository = mock(UserRepository::class.java)
     private val service =
         MatchService(
             rankedMatchRepository = rankedMatchRepository,
@@ -46,6 +48,7 @@ class MatchServiceTest {
             rankedPlayerStatRepository = rankedPlayerStatRepository,
             currentSeasonRepository = currentSeasonRepository,
             currentUserService = currentUserService,
+            userRepository = userRepository,
         )
 
     /**
@@ -141,7 +144,6 @@ class MatchServiceTest {
                 nation = "no",
                 rating = 80,
                 dzrating = 80,
-                elo = 900,
             )
         val pstat =
             RankedPlayerStat(
@@ -467,7 +469,6 @@ class MatchServiceTest {
                 nation = "no",
                 rating = 80,
                 dzrating = 80,
-                elo = 900,
             )
 
         `when`(rankedMatchRepository.findTop1ByOrderByIdDesc()).thenReturn(match)

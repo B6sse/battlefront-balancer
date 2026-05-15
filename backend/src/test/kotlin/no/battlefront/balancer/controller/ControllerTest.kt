@@ -154,7 +154,6 @@ class ControllerTest {
                     nation = "no",
                     rating = 80,
                     dzrating = 75,
-                    elo = 100,
                     br = 90,
                     played = 1,
                     best = 95,
@@ -166,9 +165,9 @@ class ControllerTest {
                 ),
             )
 
-        `when`(playerService.getPlayersWithCurrentSeasonStats()).thenReturn(players)
+        `when`(playerService.getPlayersWithSeasonStats(null)).thenReturn(players)
 
-        val response = controller.getPlayers()
+        val response = controller.getPlayers(null)
         assertEquals(HttpStatus.OK, response.statusCode)
         val body = requireNotNull(response.body)
         assertEquals(1, body.size)
@@ -181,7 +180,7 @@ class ControllerTest {
         val controller = PlayerController(playerService)
 
         val request = PlayerCreateRequest(nickname = "New", nation = "no", rating = 50)
-        val saved = Player(id = 10L, nickname = "New", nation = "no", rating = 50, dzrating = 50, elo = 900)
+        val saved = Player(id = 10L, nickname = "New", nation = "no", rating = 50, dzrating = 50)
 
         `when`(playerService.createPlayer(request)).thenReturn(saved)
 
@@ -212,7 +211,7 @@ class ControllerTest {
         val controller = PlayerController(playerService)
 
         val request = PlayerUpdateRequest(nickname = "N", nation = "no", rating = 70, dzrating = 70, br = 800)
-        val saved = Player(id = 2L, nickname = "N", nation = "no", rating = 70, dzrating = 70, elo = 900)
+        val saved = Player(id = 2L, nickname = "N", nation = "no", rating = 70, dzrating = 70)
 
         `when`(playerService.updatePlayer(2L, request)).thenReturn(saved)
 

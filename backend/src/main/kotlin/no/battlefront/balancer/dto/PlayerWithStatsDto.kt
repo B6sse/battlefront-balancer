@@ -24,7 +24,6 @@ data class PlayerWithStatsDto(
     val nation: String,
     val rating: Int,
     val dzrating: Int,
-    val elo: Int,
     val br: Int,
     val played: Int,
     val best: Int,

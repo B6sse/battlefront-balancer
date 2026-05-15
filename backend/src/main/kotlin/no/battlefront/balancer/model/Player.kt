@@ -26,6 +26,4 @@ class Player(
     var rating: Int = 0,
     @Column(name = "dz_rating", nullable = false)
     var dzrating: Int = 0,
-    @Column(nullable = false)
-    var elo: Int = 0,
 )

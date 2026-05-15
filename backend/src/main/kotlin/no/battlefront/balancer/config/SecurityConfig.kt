@@ -79,8 +79,17 @@ class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
             }.authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers(HttpMethod.GET, "/api/health", "/api/players", "/api/randomizer", "/api/last-match", "/api/seasons", "/api/matches", "/api/matches/*")
-                    .permitAll()
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/health",
+                        "/api/players",
+                        "/api/players/*/matches",
+                        "/api/randomizer",
+                        "/api/last-match",
+                        "/api/seasons",
+                        "/api/matches",
+                        "/api/matches/*",
+                    ).permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/login", "/api/logout")
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/me")

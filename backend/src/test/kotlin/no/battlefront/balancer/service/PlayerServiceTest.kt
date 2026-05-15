@@ -6,6 +6,8 @@ import no.battlefront.balancer.model.Player
 import no.battlefront.balancer.model.RankedPlayerStat
 import no.battlefront.balancer.repository.CurrentSeasonRepository
 import no.battlefront.balancer.repository.PlayerRepository
+import no.battlefront.balancer.repository.RankedMatchRepository
+import no.battlefront.balancer.repository.RankedMatchStatRepository
 import no.battlefront.balancer.repository.RankedPlayerStatRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Tag
@@ -27,7 +29,16 @@ class PlayerServiceTest {
     private val rankedPlayerStatRepository: RankedPlayerStatRepository =
         mock(RankedPlayerStatRepository::class.java)
     private val currentSeasonRepository: CurrentSeasonRepository = mock(CurrentSeasonRepository::class.java)
-    private val service = PlayerService(playerRepository, rankedPlayerStatRepository, currentSeasonRepository)
+    private val rankedMatchRepository: RankedMatchRepository = mock(RankedMatchRepository::class.java)
+    private val rankedMatchStatRepository: RankedMatchStatRepository = mock(RankedMatchStatRepository::class.java)
+    private val service =
+        PlayerService(
+            playerRepository,
+            rankedPlayerStatRepository,
+            currentSeasonRepository,
+            rankedMatchRepository,
+            rankedMatchStatRepository,
+        )
 
     /**
      * Test that getPlayersWithCurrentSeasonStats returns an empty list when there are no stats for the current season.
@@ -58,7 +69,6 @@ class PlayerServiceTest {
                 nation = "no",
                 rating = 50,
                 dzrating = 50,
-                elo = 10,
             )
         val p2 =
             Player(
@@ -67,7 +77,6 @@ class PlayerServiceTest {
                 nation = "us",
                 rating = 70,
                 dzrating = 70,
-                elo = 20,
             )
         `when`(playerRepository.findAll()).thenReturn(listOf(p1, p2))
 
@@ -95,7 +104,7 @@ class PlayerServiceTest {
     @Test
     fun `getPlayersWithCurrentSeasonStats returns players with stats when data exists`() {
         `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
-        val player = Player(id = 10L, nickname = "Test", nation = "no", rating = 80, dzrating = 80, elo = 900)
+        val player = Player(id = 10L, nickname = "Test", nation = "no", rating = 80, dzrating = 80)
         val stat =
             RankedPlayerStat(
                 id = 1L,
@@ -111,7 +120,7 @@ class PlayerServiceTest {
                 mvp = 1,
             )
         `when`(rankedPlayerStatRepository.findBySeason(1)).thenReturn(listOf(stat))
-        `when`(playerRepository.findById(10L)).thenReturn(java.util.Optional.of(player))
+        `when`(playerRepository.findAllById(listOf(10L))).thenReturn(listOf(player))
 
         val result = service.getPlayersWithCurrentSeasonStats()
 
@@ -138,7 +147,6 @@ class PlayerServiceTest {
                 nation = "no",
                 rating = 65,
                 dzrating = 65,
-                elo = 0,
             )
         `when`(playerRepository.save(any(Player::class.java))).thenReturn(savedPlayer)
         `when`(rankedPlayerStatRepository.save(any(RankedPlayerStat::class.java))).thenAnswer { it.getArgument(0) }
@@ -254,7 +262,7 @@ class PlayerServiceTest {
      */
     @Test
     fun `updatePlayer succeeds and updates BR`() {
-        val player = Player(id = 2L, nickname = "Old", nation = "us", rating = 70, dzrating = 70, elo = 850)
+        val player = Player(id = 2L, nickname = "Old", nation = "us", rating = 70, dzrating = 70)
         val stats =
             RankedPlayerStat(
                 id = 1L,
@@ -292,7 +300,7 @@ class PlayerServiceTest {
 
     @Test
     fun `updatePlayer throws when season stats are missing`() {
-        val player = Player(id = 2L, nickname = "Old", nation = "us", rating = 70, dzrating = 70, elo = 850)
+        val player = Player(id = 2L, nickname = "Old", nation = "us", rating = 70, dzrating = 70)
         `when`(playerRepository.findById(2L)).thenReturn(java.util.Optional.of(player))
         `when`(playerRepository.save(any(Player::class.java))).thenAnswer { it.getArgument(0) }
         `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
