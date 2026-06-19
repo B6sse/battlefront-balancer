@@ -17,6 +17,8 @@ data class MatchPlayerStatDto(
     val updateBr: Int,
     val newBr: Int,
     val perf: Double,
+    val kills: Int? = null,
+    val deaths: Int? = null,
 )
 
 data class MatchDetailDto(
