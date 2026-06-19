@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export function LoginPage() {
+  usePageTitle('Login')
   const { login } = useAuth()
   const navigate = useNavigate()
   const [error, setError] = useState('')
