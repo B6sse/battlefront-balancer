@@ -2,6 +2,7 @@ package no.battlefront.balancer.service
 
 import no.battlefront.balancer.dto.MatchSubmitRequest
 import no.battlefront.balancer.dto.PlayerMatchStatDto
+import no.battlefront.balancer.dto.RandomizerDto
 import no.battlefront.balancer.model.Player
 import no.battlefront.balancer.model.RankedMatch
 import no.battlefront.balancer.model.RankedMatchStat
@@ -40,6 +41,7 @@ class MatchServiceTest {
     private val currentSeasonRepository: CurrentSeasonRepository = mock(CurrentSeasonRepository::class.java)
     private val currentUserService: CurrentUserService = mock(CurrentUserService::class.java)
     private val userRepository: UserRepository = mock(UserRepository::class.java)
+    private val randomizerService: RandomizerService = mock(RandomizerService::class.java)
     private val service =
         MatchService(
             rankedMatchRepository = rankedMatchRepository,
@@ -49,6 +51,7 @@ class MatchServiceTest {
             currentSeasonRepository = currentSeasonRepository,
             currentUserService = currentUserService,
             userRepository = userRepository,
+            randomizerService = randomizerService,
         )
 
     /**
@@ -178,6 +181,7 @@ class MatchServiceTest {
         `when`(currentUserService.currentUserId()).thenReturn(10L)
         `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(2)
         `when`(rankedMatchRepository.save(org.mockito.ArgumentMatchers.any(RankedMatch::class.java))).thenReturn(RankedMatch(id = 123L))
+        `when`(randomizerService.pickAndSave()).thenReturn(RandomizerDto(map = "Dune Sea", rule = "DSE"))
 
         val mvpId = 999L
         val season = 2
@@ -293,7 +297,7 @@ class MatchServiceTest {
     }
 
     @Test
-    fun `submitMatch skips updating season stats when RankedPlayerStat missing`() {
+    fun `submitMatch throws when RankedPlayerStat missing for a player`() {
         // Arrange
         `when`(currentUserService.currentUserId()).thenReturn(10L)
         `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
@@ -320,12 +324,8 @@ class MatchServiceTest {
                 imperials = emptyList(),
             )
 
-        // Act
-        service.submitMatch(request)
-
-        // Assert
-        // match stats row is still persisted, but aggregated season stats are skipped
-        verify(rankedMatchStatRepository, times(1)).save(org.mockito.ArgumentMatchers.any(RankedMatchStat::class.java))
+        // Act & Assert
+        assertThrows<IllegalStateException> { service.submitMatch(request) }
         verify(rankedPlayerStatRepository, never()).save(org.mockito.ArgumentMatchers.any(RankedPlayerStat::class.java))
     }
 
@@ -335,6 +335,7 @@ class MatchServiceTest {
         `when`(currentUserService.currentUserId()).thenReturn(10L)
         `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(null)
         `when`(rankedMatchRepository.save(org.mockito.ArgumentMatchers.any(RankedMatch::class.java))).thenReturn(RankedMatch(id = 55L))
+        `when`(randomizerService.pickAndSave()).thenReturn(RandomizerDto(map = "Dune Sea", rule = "DSE"))
 
         // mvpIdRaw = 0 => mvpId = null => mvp always 0
         val season = 1
