@@ -60,7 +60,12 @@ export async function getLastMatch(): Promise<LastMatchPlayer[]> {
   return res.json()
 }
 
-export async function submitMatch(payload: MatchSubmitPayload): Promise<void> {
+export interface SubmitMatchResult {
+  nextMap: string
+  nextRule: string
+}
+
+export async function submitMatch(payload: MatchSubmitPayload): Promise<SubmitMatchResult> {
   const res = await fetch(`${API_BASE}/matches`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -69,4 +74,36 @@ export async function submitMatch(payload: MatchSubmitPayload): Promise<void> {
   })
   const data = await res.json()
   if (!data.success) throw new Error(data.message || 'Failed to submit match')
+  return { nextMap: data.nextMap, nextRule: data.nextRule }
+}
+
+export interface RandomizerWeightEntry {
+  id: number
+  type: string
+  name: string
+  weight: number
+}
+
+export interface RandomizerWeightsResponse {
+  maps: RandomizerWeightEntry[]
+  rules: RandomizerWeightEntry[]
+}
+
+export async function getRandomizerWeights(): Promise<RandomizerWeightsResponse> {
+  const res = await fetch(`${API_BASE}/randomizer/weights`, { credentials: 'include' })
+  if (!res.ok) throw new Error('Failed to load randomizer weights')
+  return res.json()
+}
+
+export async function updateRandomizerWeights(
+  weights: { id: number; weight: number }[],
+): Promise<RandomizerWeightsResponse> {
+  const res = await fetch(`${API_BASE}/randomizer/weights`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ weights }),
+  })
+  if (!res.ok) throw new Error('Failed to update weights')
+  return res.json()
 }

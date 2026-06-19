@@ -17,6 +17,8 @@ export interface MatchPlayerStat {
   updateBr: number
   newBr: number
   perf: number
+  kills: number | null
+  deaths: number | null
 }
 
 export interface MatchDetail {
