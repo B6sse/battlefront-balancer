@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'react'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { Link, NavLink } from 'react-router-dom'
 import { getPlayers } from '../api/players'
-import { getRandomizer, getLastMatch, postRandomizer, submitMatch } from '../api/ranked'
+import { getRandomizer, getLastMatch, submitMatch } from '../api/ranked'
 import type { LastMatchPlayer, PlayerMatchStat } from '../api/ranked'
 import type { PlayerWithStats } from '../types'
 import { useAuth } from '../context/AuthContext'
@@ -24,20 +24,6 @@ const RANK_ICON_URLS: Record<string, string> = {
 
 const FLAG_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/2.8.0/flags/4x3'
 const MIN_PLAYERS = 8
-const NORMAL_MAPS = [
-  { name: 'Dune Sea', percentage: 27 },
-  { name: 'Jawa Refuge', percentage: 18 },
-  { name: 'Goazon Badlands', percentage: 15 },
-  { name: 'Raider Camp', percentage: 12 },
-  { name: 'Rebel Depot', percentage: 10 },
-  { name: 'Sulfur Fields', percentage: 8 },
-  { name: 'Twilight on Hoth', percentage: 6 },
-  { name: 'Swamp Crash Site', percentage: 4 },
-]
-const NORMAL_RULES = [
-  { name: 'DSE', percentage: 85 },
-  { name: 'DACE', percentage: 15 },
-]
 
 // --- Balance algorithm ---
 
@@ -113,15 +99,7 @@ function formatAvg(avg: number): string {
   return avg === Math.floor(avg) ? String(avg) : avg.toFixed(1)
 }
 
-function selectRandom<T extends { percentage: number }>(items: T[]): T {
-  const total = items.reduce((s, i) => s + i.percentage, 0)
-  let r = Math.random() * total
-  for (const item of items) {
-    r -= item.percentage
-    if (r <= 0) return item
-  }
-  return items[items.length - 1]
-}
+
 
 // --- BR calculation ---
 
@@ -609,18 +587,14 @@ export function RankedPage() {
         deaths: r.deaths,
       })
 
-      await submitMatch({
+      const { nextMap, nextRule } = await submitMatch({
         matchData: [md.map, md.teamSize, md.mvpId, md.rebelResult, md.imperialResult, md.rule],
         rebels: calcResults.rebels.map(toStat),
         imperials: calcResults.imperials.map(toStat),
       })
 
-      // Pick next map/rule and save
-      const nextMap = selectRandom(NORMAL_MAPS)
-      const nextRule = selectRandom(NORMAL_RULES)
-      await postRandomizer(nextMap.name, nextRule.name)
-      setCurrentMap(nextMap.name)
-      setCurrentRule(nextRule.name)
+      setCurrentMap(nextMap)
+      setCurrentRule(nextRule)
 
       // Re-fetch players to get updated BR values
       const freshPlayers = await getPlayers()
@@ -998,6 +972,8 @@ export function RankedPage() {
                               {canSubmit ? (
                                 <>
                                   <th className="head__cell head__md">Score</th>
+                                  <th className="head__cell head__xs">Kills</th>
+                                  <th className="head__cell head__xs">Deaths</th>
                                   <th className="head__cell head__xs">&Delta;BR</th>
                                   <th className="head__cell head__md">NBR</th>
                                 </>

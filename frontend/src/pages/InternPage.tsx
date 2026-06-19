@@ -1,8 +1,10 @@
 import { useEffect, useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { getPlayers } from '../api/players'
+import { usePageTitle } from '../hooks/usePageTitle'
+import { Link, NavLink } from 'react-router-dom'
+import { getInternPlayers } from '../api/players'
 import type { PlayerWithStats } from '../types'
 import { RatingBadge } from '../components/RatingBadge'
+import { Footer } from '../components/Footer'
 import internImg from '../assets/images/intern.jpg'
 
 const FLAG_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/2.8.0/flags/4x3'
@@ -88,6 +90,7 @@ function formatAvg(avg: number): string {
 // --- Component ---
 
 export function InternPage() {
+  usePageTitle('Intern')
   const [allPlayers, setAllPlayers] = useState<PlayerWithStats[]>([])
   const [selected, setSelected] = useState<PlayerWithStats[]>([])
   const [rebels, setRebels] = useState<PlayerWithStats[]>([])
@@ -103,7 +106,7 @@ export function InternPage() {
   const ratingKey: RatingKey = isDZ ? 'dzrating' : 'rating'
 
   useEffect(() => {
-    getPlayers()
+    getInternPlayers()
       .then((data) => setAllPlayers(Array.isArray(data) ? data : []))
       .catch(() => setError('Could not load players'))
       .finally(() => setLoading(false))
@@ -223,10 +226,18 @@ export function InternPage() {
   }
 
   return (
-    <main>
+    <>
+      <main>
       <section className="section section--balance">
         <div className="container">
-          <h1 className="title title--large" style={{ whiteSpace: 'nowrap' }}>Private Match</h1>
+          <div>
+            <nav className="breadcrumb">
+              <NavLink end className="link nav__element--link sound__hover sound__click" to="/">Play</NavLink>
+              <span className="breadcrumb__separator">/</span>
+              <span className="breadcrumb__current">Intern</span>
+            </nav>
+            <h1 className="title title--large" style={{ whiteSpace: 'nowrap' }}>Private Match</h1>
+          </div>
 
           {/* Settings: image + player table + controls */}
           <div className="settings">
@@ -433,5 +444,7 @@ export function InternPage() {
         </div>
       </section>
     </main>
+    <Footer />
+    </>
   )
 }
