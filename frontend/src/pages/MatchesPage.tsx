@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { useSearchParams } from 'react-router-dom'
 import { getSeasons, getMatchList, getMatchDetail } from '../api/matches'
 import type { MatchDetail, MatchSummary } from '../types'
@@ -61,6 +62,7 @@ interface MatchStatTableProps {
 }
 
 function MatchStatTable({ title, teamSize, players, colorClass }: MatchStatTableProps) {
+  const hasKD = players.some((p) => p.kills != null)
   return (
     <div className={colorClass}>
       <div className="team__info">
@@ -73,6 +75,8 @@ function MatchStatTable({ title, teamSize, players, colorClass }: MatchStatTable
             <tr>
               <th className="head__cell head__player head__xxl">Name</th>
               <th className="head__cell head__sm">Score</th>
+              {hasKD && <th className="head__cell head__xs">Kills</th>}
+              {hasKD && <th className="head__cell head__xs">Deaths</th>}
               <th className="head__cell head__xs">ΔBR</th>
               <th className="head__cell head__xs">NBR</th>
               <th className="head__cell head__xs">Perf</th>
@@ -93,6 +97,8 @@ function MatchStatTable({ title, teamSize, players, colorClass }: MatchStatTable
                   </ul>
                 </td>
                 <td className="table__cell table__sm">{p.score}</td>
+                {hasKD && <td className="table__cell table__xs">{p.kills ?? '-'}</td>}
+                {hasKD && <td className="table__cell table__xs">{p.deaths ?? '-'}</td>}
                 <td className="table__cell table__xs">{p.updateBr}</td>
                 <td className="table__cell table__xs">{p.newBr}</td>
                 <td className="table__cell table__xs">{p.perf}</td>
@@ -106,6 +112,7 @@ function MatchStatTable({ title, teamSize, players, colorClass }: MatchStatTable
 }
 
 export function MatchesPage() {
+  usePageTitle('Match history')
   const [searchParams] = useSearchParams()
   const linkedMatchId = searchParams.get('match') ? Number(searchParams.get('match')) : null
   const linkedSeason = searchParams.get('season') ?? null
@@ -216,9 +223,9 @@ export function MatchesPage() {
                       <th className="head__cell head__sm">Date</th>
                       <th className="head__cell head__xxs">Time</th>
                       <th className="head__cell head__md">Map</th>
-                      <th className="head__cell head__xs">Rule</th>
-                      <th className="head__cell head__xxs">Size</th>
                       <th className="head__cell head__sm">Mvp</th>
+                      <th className="head__cell head__xxs">Size</th>
+                      <th className="head__cell head__xs">Rule</th>
                       <th className="head__cell head__sm">Head</th>
                     </tr>
                   </thead>
@@ -246,11 +253,11 @@ export function MatchesPage() {
                           <td className="table__cell table__date table__sm">{formatDate(m.date)}</td>
                           <td className="table__cell table__xxs">{formatTime(m.date)}</td>
                           <td className="table__cell table__map table__md">{m.map}</td>
-                          <td className="table__cell table__xs">{m.rule}</td>
+                          <td className="table__cell table__sm">{m.mvpName ?? '?'}</td>
                           <td className="table__cell table__size table__xxs">
                             {m.teamSize} V {m.teamSize}
                           </td>
-                          <td className="table__cell table__sm">{m.mvpName ?? '?'}</td>
+                          <td className="table__cell table__xs">{m.rule}</td>
                           <td className="table__cell table__sm">{m.supervisorName ?? '?'}</td>
                         </tr>
                       ))

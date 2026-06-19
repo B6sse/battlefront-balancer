@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { usePageTitle } from '../hooks/usePageTitle'
 import { useNavigate } from 'react-router-dom'
 import { getSeasons } from '../api/matches'
 import { getPlayersWithSeason, getPlayerMatchHistory } from '../api/players'
@@ -92,6 +93,7 @@ function BrChart({ entries }: { entries: PlayerMatchHistoryEntry[] }) {
 }
 
 export function StatsPage() {
+  usePageTitle('Player statistics')
   const [seasons, setSeasons] = useState<number[]>([])
   const [activeSeason, setActiveSeason] = useState<string | null>(null)
   const [players, setPlayers] = useState<PlayerWithStats[]>([])
