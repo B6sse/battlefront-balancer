@@ -6,6 +6,7 @@ import no.battlefront.balancer.dto.MatchPlayerStatDto
 import no.battlefront.balancer.dto.MatchSubmitRequest
 import no.battlefront.balancer.dto.MatchSummaryDto
 import no.battlefront.balancer.dto.PlayerMatchStatDto
+import no.battlefront.balancer.dto.RandomizerDto
 import no.battlefront.balancer.model.RankedMatch
 import no.battlefront.balancer.model.RankedMatchStat
 import no.battlefront.balancer.repository.CurrentSeasonRepository
@@ -29,13 +30,17 @@ class MatchService(
     private val currentSeasonRepository: CurrentSeasonRepository,
     private val userRepository: UserRepository,
     private val currentUserService: CurrentUserService,
+    private val randomizerService: RandomizerService,
 ) {
     private val isoFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
 
     /**
      * Returns all distinct seasons that have at least one match.
      */
-    fun getSeasons(): List<Int> = rankedMatchRepository.findDistinctSeasons()
+    fun getSeasons(): List<Int> =
+        (rankedMatchRepository.findDistinctSeasons() + currentSeasonRepository.findAllSeasons())
+            .distinct()
+            .sorted()
 
     /**
      * Returns a summary list of matches.
@@ -107,6 +112,8 @@ class MatchService(
                     updateBr = stat.updateBr,
                     newBr = stat.newBr,
                     perf = stat.perf,
+                    kills = stat.kills,
+                    deaths = stat.deaths,
                 )
             if (stat.faction == "Rebel") rebels.add(dto) else imperials.add(dto)
         }
@@ -130,7 +137,7 @@ class MatchService(
      * @throws IllegalArgumentException if matchData has fewer than 6 elements.
      */
     @Transactional
-    fun submitMatch(request: MatchSubmitRequest) {
+    fun submitMatch(request: MatchSubmitRequest): RandomizerDto {
         require(request.matchData.size >= 6) { "Incomplete data provided" }
         val supervisorId = currentUserService.currentUserId() ?: throw AccessDeniedException("Not authenticated")
         val map = request.matchData[0].toString()
@@ -170,11 +177,13 @@ class MatchService(
                     perf = p.perf,
                     updateBr = p.change,
                     newBr = p.newBR,
+                    kills = p.kills,
+                    deaths = p.deaths,
                 ),
             )
             val pstat =
                 rankedPlayerStatRepository.findByPlayerIdAndSeason(p.id, season)
-                    ?: continue
+                    ?: throw IllegalStateException("Missing season stats for player id=${p.id} in season $season")
             val newBest = maxOf(pstat.best, p.newBR)
             val (won, lost, draw) =
                 when (p.outcome) {
@@ -193,6 +202,7 @@ class MatchService(
             pstat.mvp += mvp
             rankedPlayerStatRepository.save(pstat)
         }
+        return randomizerService.pickAndSave()
     }
 
     /**

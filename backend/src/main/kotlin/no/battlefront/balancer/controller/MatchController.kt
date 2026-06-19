@@ -69,8 +69,8 @@ class MatchController(
         @RequestBody request: MatchSubmitRequest,
     ): ResponseEntity<Map<String, Any>> =
         try {
-            matchService.submitMatch(request)
-            ResponseEntity.ok(mapOf("success" to true, "message" to "Data saved successfully"))
+            val next = matchService.submitMatch(request)
+            ResponseEntity.ok(mapOf("success" to true, "nextMap" to next.map, "nextRule" to next.rule))
         } catch (e: IllegalArgumentException) {
             ResponseEntity
                 .badRequest()
