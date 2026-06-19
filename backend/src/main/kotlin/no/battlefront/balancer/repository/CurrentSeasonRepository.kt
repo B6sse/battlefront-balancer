@@ -13,4 +13,7 @@ interface CurrentSeasonRepository : JpaRepository<CurrentSeason, Int> {
      */
     @Query("SELECT MAX(c.season) FROM CurrentSeason c")
     fun findCurrentSeason(): Int?
+
+    @Query("SELECT c.season FROM CurrentSeason c ORDER BY c.season")
+    fun findAllSeasons(): List<Int>
 }

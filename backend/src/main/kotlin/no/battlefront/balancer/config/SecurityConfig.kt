@@ -19,8 +19,9 @@ import org.springframework.security.web.context.SecurityContextHolderFilter
 /**
  * Spring Security configuration for the API.
  *
- * Configures session-based authentication (login via POST /api/login). CSRF is disabled for
- * stateless API usage. Public endpoints (health, players list, randomizer, last-match, login,
+ * Configures session-based authentication (login via POST /api/login). CSRF is disabled because
+ * the session cookie uses SameSite=Strict, which prevents cross-site request forgery without
+ * needing CSRF tokens. Public endpoints (health, players list, randomizer, last-match, login,
  * logout) use **permitAll**; [GET /api/me] requires **authenticated**; write operations require
  * **ROLE_admin** and/or **ROLE_supervisor**. Form login, HTTP Basic and the default logout filter
  * are disabled in favour of custom [AuthController][no.battlefront.balancer.controller.AuthController] endpoints.
@@ -77,6 +78,10 @@ class SecurityConfig {
             .csrf { it.disable() }
             .sessionManagement { session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+            }.exceptionHandling { ex ->
+                ex.authenticationEntryPoint { _, response, _ ->
+                    response.sendError(401)
+                }
             }.authorizeHttpRequests { auth ->
                 auth
                     .requestMatchers(
@@ -92,16 +97,28 @@ class SecurityConfig {
                     ).permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/login", "/api/logout")
                     .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/admin/**")
+                    .hasAuthority("ROLE_admin")
+                    .requestMatchers(HttpMethod.POST, "/api/admin/**")
+                    .hasAuthority("ROLE_admin")
+                    .requestMatchers(HttpMethod.PUT, "/api/admin/**")
+                    .hasAuthority("ROLE_admin")
+                    .requestMatchers(HttpMethod.DELETE, "/api/admin/users/*")
+                    .hasAuthority("ROLE_admin")
+                    .requestMatchers(HttpMethod.GET, "/api/randomizer/weights")
+                    .hasAuthority("ROLE_admin")
+                    .requestMatchers(HttpMethod.PUT, "/api/randomizer/weights")
+                    .hasAuthority("ROLE_admin")
                     .requestMatchers(HttpMethod.GET, "/api/me")
                     .authenticated()
                     .requestMatchers(HttpMethod.POST, "/api/matches", "/api/randomizer")
                     .hasAnyAuthority("ROLE_admin", "ROLE_supervisor")
                     .requestMatchers(HttpMethod.POST, "/api/players")
-                    .hasAuthority("ROLE_admin")
+                    .hasAnyAuthority("ROLE_admin", "ROLE_editor")
                     .requestMatchers(HttpMethod.PUT, "/api/players/*")
-                    .hasAuthority("ROLE_admin")
+                    .hasAnyAuthority("ROLE_admin", "ROLE_editor")
                     .requestMatchers(HttpMethod.DELETE, "/api/players/*")
-                    .hasAuthority("ROLE_admin")
+                    .hasAnyAuthority("ROLE_admin", "ROLE_editor")
                     .anyRequest()
                     .denyAll()
             }.formLogin { it.disable() }

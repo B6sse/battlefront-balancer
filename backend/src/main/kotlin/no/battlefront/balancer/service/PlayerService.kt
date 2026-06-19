@@ -80,6 +80,25 @@ class PlayerService(
         }
     }
 
+    fun getAllPlayersForInternView(): List<PlayerWithStatsDto> =
+        playerRepository.findAll().map { player ->
+            PlayerWithStatsDto(
+                id = player.id,
+                nickname = player.nickname,
+                nation = player.nation,
+                rating = player.rating,
+                dzrating = player.dzrating,
+                br = 0,
+                played = 0,
+                best = 0,
+                won = 0,
+                lost = 0,
+                draw = 0,
+                score = 0,
+                mvp = 0,
+            )
+        }
+
     /**
      * Returns the match history for a player, newest first.
      * - null/blank → current season
@@ -240,6 +259,15 @@ class PlayerService(
                 val player = playerMap[playerId] ?: return@mapNotNull null
                 val latestSeason = stats.maxOf { it.season }
                 val latestBr = stats.first { it.season == latestSeason }.br
+                val pastStats = stats.filter { it.season != latestSeason }
+                val weightedAvgBr =
+                    if (pastStats.isEmpty()) {
+                        latestBr.toDouble()
+                    } else {
+                        val totalWeighted = pastStats.sumOf { it.br.toDouble() * it.played }
+                        val totalPlayed = pastStats.sumOf { it.played }
+                        if (totalPlayed == 0) latestBr.toDouble() else totalWeighted / totalPlayed
+                    }
                 PlayerWithStatsDto(
                     id = player.id,
                     nickname = player.nickname,
@@ -254,12 +282,12 @@ class PlayerService(
                     draw = stats.sumOf { it.draw },
                     score = stats.sumOf { it.score },
                     mvp = stats.sumOf { it.mvp },
-                )
+                ) to weightedAvgBr
             }.sortedWith(
-                compareByDescending<PlayerWithStatsDto> { it.played >= 5 }
-                    .thenByDescending { it.br }
-                    .thenBy { it.nickname.lowercase() },
-            )
+                compareByDescending<Pair<PlayerWithStatsDto, Double>> { it.first.played >= 5 }
+                    .thenByDescending { it.second }
+                    .thenBy { it.first.nickname.lowercase() },
+            ).map { it.first }
     }
 
     private fun RankedPlayerStat.toDto(player: Player) =

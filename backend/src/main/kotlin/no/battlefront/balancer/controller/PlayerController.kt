@@ -28,7 +28,11 @@ class PlayerController(
     @GetMapping("/players")
     fun getPlayers(
         @RequestParam(required = false) season: String?,
-    ): ResponseEntity<List<PlayerWithStatsDto>> = ResponseEntity.ok(playerService.getPlayersWithSeasonStats(season))
+        @RequestParam(required = false) view: String?,
+    ): ResponseEntity<List<PlayerWithStatsDto>> {
+        if (view == "intern") return ResponseEntity.ok(playerService.getAllPlayersForInternView())
+        return ResponseEntity.ok(playerService.getPlayersWithSeasonStats(season))
+    }
 
     /**
      * Returns the match history for a player, newest first.
