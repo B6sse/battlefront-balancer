@@ -1,7 +1,8 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { Link, NavLink } from 'react-router-dom'
 import { getInternPlayers } from '../api/players'
+import { balanceTeams } from '../api/balance'
 import type { PlayerWithStats } from '../types'
 import { RatingBadge } from '../components/RatingBadge'
 import { Footer } from '../components/Footer'
@@ -11,77 +12,6 @@ const FLAG_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/2.8.0/fl
 const MIN_PLAYERS = 4
 
 type RatingKey = 'rating' | 'dzrating'
-
-// --- Balance algorithm (ported from script.js) ---
-
-type Subset = { team: PlayerWithStats[]; sum: number }
-
-function getSubsetsOfExactSize(players: PlayerWithStats[], key: RatingKey, size: number): Subset[] {
-  const result: Subset[] = []
-  function backtrack(start: number, current: PlayerWithStats[], sum: number) {
-    if (current.length === size) {
-      result.push({ team: [...current], sum })
-      return
-    }
-    for (let i = start; i < players.length; i++) {
-      backtrack(i + 1, [...current, players[i]], sum + players[i][key])
-    }
-  }
-  backtrack(0, [], 0)
-  return result
-}
-
-function findClosestSubset(subsets: Subset[], target: number): Subset {
-  let lo = 0
-  let hi = subsets.length - 1
-  let closest = subsets[0]
-  while (lo <= hi) {
-    const mid = Math.floor((lo + hi) / 2)
-    const cur = subsets[mid]
-    if (Math.abs(cur.sum - target) < Math.abs(closest.sum - target)) closest = cur
-    if (cur.sum === target) return cur
-    else if (cur.sum < target) lo = mid + 1
-    else hi = mid - 1
-  }
-  return closest
-}
-
-function generateCombinations(players: PlayerWithStats[], key: RatingKey) {
-  const sorted = [...players].sort((a, b) => b[key] - a[key] || a.nickname.localeCompare(b.nickname))
-  const teamSize = sorted.length / 2
-  const totalRating = sorted.reduce((sum, p) => sum + p[key], 0)
-  const halfTotal = totalRating / 2
-  const left = sorted.slice(0, teamSize)
-  const right = sorted.slice(teamSize)
-
-  let bestDiff = Infinity
-  let bestTeam1: PlayerWithStats[] = []
-
-  for (let k = 0; k <= teamSize; k++) {
-    const leftSubsets = getSubsetsOfExactSize(left, key, k)
-    const rightSubsets = getSubsetsOfExactSize(right, key, teamSize - k)
-    rightSubsets.sort((a, b) => a.sum - b.sum)
-
-    for (const ls of leftSubsets) {
-      const matchRight = findClosestSubset(rightSubsets, halfTotal - ls.sum)
-      const diff = Math.abs(totalRating - 2 * (ls.sum + matchRight.sum))
-      if (diff < bestDiff) {
-        bestDiff = diff
-        bestTeam1 = [...ls.team, ...matchRight.team]
-      }
-      if (bestDiff === 0) break
-    }
-    if (bestDiff === 0) break
-  }
-
-  const bestTeam2 = sorted.filter((p) => !bestTeam1.includes(p))
-  const byRating = (a: PlayerWithStats, b: PlayerWithStats) => b[key] - a[key] || a.nickname.localeCompare(b.nickname)
-  return { team1: [...bestTeam1].sort(byRating), team2: [...bestTeam2].sort(byRating) }
-}
-
-function avgRating(team: PlayerWithStats[], key: RatingKey): number {
-  return team.reduce((sum, p) => sum + p[key], 0) / team.length
-}
 
 function formatAvg(avg: number): string {
   return avg === Math.floor(avg) ? String(avg) : avg.toFixed(1)
@@ -104,6 +34,8 @@ export function InternPage() {
   const [loading, setLoading] = useState(true)
 
   const ratingKey: RatingKey = isDZ ? 'dzrating' : 'rating'
+  // Ignores balance responses that arrive after the selection has changed again
+  const balanceSeq = useRef(0)
 
   useEffect(() => {
     getInternPlayers()
@@ -127,12 +59,20 @@ export function InternPage() {
     )
   }, [available, search])
 
-  function runBalance(players: PlayerWithStats[], key: RatingKey) {
-    const { team1, team2 } = generateCombinations(players, key)
-    setRebels(team1)
-    setImperials(team2)
-    setRebelAvg(avgRating(team1, key))
-    setImperialAvg(avgRating(team2, key))
+  async function runBalance(players: PlayerWithStats[], key: RatingKey) {
+    const seq = ++balanceSeq.current
+    try {
+      const result = await balanceTeams(key, players.map((p) => p.id))
+      if (seq !== balanceSeq.current) return
+      const byId = new Map(players.map((p) => [p.id, p]))
+      const pick = (ids: number[]) => ids.map((id) => byId.get(id)).filter((p): p is PlayerWithStats => p !== undefined)
+      setRebels(pick(result.rebels))
+      setImperials(pick(result.imperials))
+      setRebelAvg(result.rebelAverage)
+      setImperialAvg(result.imperialAverage)
+    } catch (e) {
+      if (seq === balanceSeq.current) setError(e instanceof Error ? e.message : 'Failed to balance teams')
+    }
   }
 
   function handleSelect(player: PlayerWithStats) {
@@ -155,6 +95,7 @@ export function InternPage() {
     if (teamsShown && next.length >= MIN_PLAYERS && next.length % 2 === 0) {
       runBalance(next, ratingKey)
     } else if (next.length < MIN_PLAYERS) {
+      balanceSeq.current++
       setRebels([])
       setImperials([])
       setRebelAvg(0)
@@ -177,6 +118,7 @@ export function InternPage() {
   }
 
   function handleReset() {
+    balanceSeq.current++
     setSelected([])
     setRebels([])
     setImperials([])

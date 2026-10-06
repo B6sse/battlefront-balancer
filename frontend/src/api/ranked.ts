@@ -5,24 +5,6 @@ export interface RandomizerResult {
   rule: string
 }
 
-export interface PlayerMatchStat {
-  id: number
-  faction: string
-  outcome: string
-  score: number
-  perf: number
-  change: number
-  NewBR: number
-  kills: number
-  deaths: number
-}
-
-export interface MatchSubmitPayload {
-  matchData: [string, number, number, number, number, string]
-  rebels: PlayerMatchStat[]
-  imperials: PlayerMatchStat[]
-}
-
 export interface LastMatchPlayer {
   id: number
   nickname: string
@@ -62,21 +44,62 @@ export async function getLastMatch(): Promise<LastMatchPlayer[]> {
   return res.json()
 }
 
-export interface SubmitMatchResult {
-  nextMap: string
-  nextRule: string
+export interface RawMatchPlayerInput {
+  playerId: number
+  faction: 'Rebel' | 'Imperial'
+  score: number
+  kills: number
+  deaths: number
+  partnerless: boolean
 }
 
-export async function submitMatch(payload: MatchSubmitPayload): Promise<SubmitMatchResult> {
-  const res = await fetch(`${API_BASE}/matches`, {
+/** Raw result of one map; the server computes BR, perf and MVP. */
+export interface RawMatchInput {
+  map: string
+  rule: string
+  rebelScore: number
+  imperialScore: number
+  players: RawMatchPlayerInput[]
+}
+
+export interface RawMatchPlayerResult {
+  playerId: number
+  personaId: number | null
+  nickname: string
+  outcome: 'Won' | 'Lost' | 'Draw'
+  score: number
+  perf: number
+  change: number
+  newBr: number
+}
+
+export interface RawMatchResult {
+  /** null for a dry run */
+  matchId: number | null
+  map: string
+  rule: string
+  mvpPlayerId: number | null
+  /** Same order as the players were sent, per team */
+  rebels: RawMatchPlayerResult[]
+  imperials: RawMatchPlayerResult[]
+  nextMap: string | null
+  nextRule: string | null
+}
+
+/**
+ * Rates a match on the server. With [dryRun] the result is only computed (to preview BR changes);
+ * otherwise the match is stored and the randomizer picks the next map and rule.
+ */
+export async function rateMatch(input: RawMatchInput, dryRun: boolean): Promise<RawMatchResult> {
+  const res = await fetch(`${API_BASE}/matches/raw${dryRun ? '?dryRun=true' : ''}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(input),
   })
-  const data = await res.json()
-  if (!data.success) throw new Error(data.message || 'Failed to submit match')
-  return { nextMap: data.nextMap, nextRule: data.nextRule }
+  const data = await res.json().catch(() => null)
+  if (!res.ok) throw new Error(data?.message ?? 'Failed to submit match')
+  return data as RawMatchResult
 }
 
 export interface RandomizerWeightEntry {

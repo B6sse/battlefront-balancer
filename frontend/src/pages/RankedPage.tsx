@@ -2,8 +2,9 @@ import { useEffect, useState, useMemo, useRef } from 'react'
 import { usePageTitle } from '../hooks/usePageTitle'
 import { Link, NavLink } from 'react-router-dom'
 import { getPlayers } from '../api/players'
-import { getRandomizer, getLastMatch, submitMatch } from '../api/ranked'
-import type { LastMatchPlayer, PlayerMatchStat } from '../api/ranked'
+import { getRandomizer, getLastMatch, rateMatch } from '../api/ranked'
+import type { LastMatchPlayer, RawMatchInput, RawMatchPlayerResult } from '../api/ranked'
+import { balanceTeams } from '../api/balance'
 import type { PlayerWithStats } from '../types'
 import { useAuth } from '../context/AuthContext'
 import { getRankByDistributionFraction } from '../utils/rankIcons'
@@ -25,160 +26,8 @@ const RANK_ICON_URLS: Record<string, string> = {
 const FLAG_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/2.8.0/flags/4x3'
 const MIN_PLAYERS = 8
 
-// --- Balance algorithm ---
-
-type Subset = { team: PlayerWithStats[]; sum: number }
-
-function getSubsetsOfExactSize(players: PlayerWithStats[], size: number): Subset[] {
-  const result: Subset[] = []
-  function backtrack(start: number, current: PlayerWithStats[], sum: number) {
-    if (current.length === size) {
-      result.push({ team: [...current], sum })
-      return
-    }
-    for (let i = start; i < players.length; i++) {
-      backtrack(i + 1, [...current, players[i]], sum + players[i].br)
-    }
-  }
-  backtrack(0, [], 0)
-  return result
-}
-
-function findClosestSubset(subsets: Subset[], target: number): Subset {
-  let lo = 0
-  let hi = subsets.length - 1
-  let closest = subsets[0]
-  while (lo <= hi) {
-    const mid = Math.floor((lo + hi) / 2)
-    const cur = subsets[mid]
-    if (Math.abs(cur.sum - target) < Math.abs(closest.sum - target)) closest = cur
-    if (cur.sum === target) return cur
-    else if (cur.sum < target) lo = mid + 1
-    else hi = mid - 1
-  }
-  return closest
-}
-
-function generateCombinations(players: PlayerWithStats[]) {
-  const sorted = [...players].sort((a, b) => b.br - a.br || a.nickname.localeCompare(b.nickname))
-  const teamSize = sorted.length / 2
-  const totalRating = sorted.reduce((sum, p) => sum + p.br, 0)
-  const halfTotal = totalRating / 2
-  const left = sorted.slice(0, teamSize)
-  const right = sorted.slice(teamSize)
-
-  let bestDiff = Infinity
-  let bestTeam1: PlayerWithStats[] = []
-
-  for (let k = 0; k <= teamSize; k++) {
-    const leftSubsets = getSubsetsOfExactSize(left, k)
-    const rightSubsets = getSubsetsOfExactSize(right, teamSize - k)
-    rightSubsets.sort((a, b) => a.sum - b.sum)
-    for (const ls of leftSubsets) {
-      const matchRight = findClosestSubset(rightSubsets, halfTotal - ls.sum)
-      const diff = Math.abs(totalRating - 2 * (ls.sum + matchRight.sum))
-      if (diff < bestDiff) {
-        bestDiff = diff
-        bestTeam1 = [...ls.team, ...matchRight.team]
-      }
-      if (bestDiff === 0) break
-    }
-    if (bestDiff === 0) break
-  }
-
-  const bestTeam2 = sorted.filter((p) => !bestTeam1.includes(p))
-  const byBr = (a: PlayerWithStats, b: PlayerWithStats) => b.br - a.br || a.nickname.localeCompare(b.nickname)
-  return { team1: [...bestTeam1].sort(byBr), team2: [...bestTeam2].sort(byBr) }
-}
-
-function avgBr(team: PlayerWithStats[]): number {
-  return team.reduce((sum, p) => sum + p.br, 0) / team.length
-}
-
 function formatAvg(avg: number): string {
   return avg === Math.floor(avg) ? String(avg) : avg.toFixed(1)
-}
-
-
-
-// --- BR calculation ---
-
-interface PlayerCalcData {
-  id: number
-  br: number
-  score: number
-  kills: number
-  deaths: number
-  faction: 'Rebel' | 'Imperial'
-  outcome: 'Won' | 'Lost' | 'Draw'
-  partnerless: boolean
-}
-
-interface PlayerCalcResult {
-  id: number
-  br: number
-  score: number
-  kills: number
-  deaths: number
-  faction: 'Rebel' | 'Imperial'
-  outcome: 'Won' | 'Lost' | 'Draw'
-  change: number
-  perf: number
-  NewBR: number
-}
-
-function getKdModifier(kills: number, deaths: number, teamAverageKD: number): number {
-  const kd = kills / Math.max(deaths, 1)
-  const relativeKD = teamAverageKD > 0 ? kd / teamAverageKD : 1
-  const cappedKDImpact = Math.max(-1, Math.min(1, relativeKD - 1))
-  return 1 + 0.05 * cappedKDImpact
-}
-
-function teamAvgKD(team: PlayerCalcData[]): number {
-  return team.reduce((s, p) => s + p.kills / Math.max(p.deaths, 1), 0) / team.length
-}
-
-function effectiveScore(p: PlayerCalcData, avgKD: number): number {
-  const partnerlessScore = p.partnerless ? Math.round(p.score * 1.1) : p.score
-  return Math.round(partnerlessScore * getKdModifier(p.kills, p.deaths, avgKD))
-}
-
-function calcWin(team: PlayerCalcData[], teamBR: number, teamDelta: number): PlayerCalcResult[] {
-  const teamtot = team.reduce((s, p) => s + p.score, 0)
-  const avgKD = teamAvgKD(team)
-  return team.map((p) => {
-    const exCarry = p.br / teamBR
-    const ps = effectiveScore(p, avgKD)
-    const acCarry = teamtot === 0 ? 1 : (ps / teamtot) / (1 / team.length) / exCarry
-    const playerDelta = Math.round(teamDelta - (1 - acCarry) * teamDelta)
-    return { id: p.id, br: p.br, score: p.score, kills: p.kills, deaths: p.deaths, faction: p.faction, outcome: p.outcome, change: playerDelta, perf: parseFloat(acCarry.toFixed(2)), NewBR: p.br + playerDelta }
-  })
-}
-
-function calcLoss(team: PlayerCalcData[], teamBR: number, teamDelta: number, scoreDiff: number): PlayerCalcResult[] {
-  const teamtot = team.reduce((s, p) => s + p.score, 0)
-  const objectiveBonus = [0, 3, 2, 1, 0, -1][Math.min(scoreDiff, 5)]
-  const avgKD = teamAvgKD(team)
-  return team.map((p) => {
-    const exCarry = p.br / teamBR
-    const ps = effectiveScore(p, avgKD)
-    const acCarry = teamtot === 0 ? 1 : (ps / teamtot) / (1 / team.length) / exCarry
-    const playerDelta = Math.round(teamDelta + 1.25 * (1 - acCarry) * teamDelta) + objectiveBonus
-    return { id: p.id, br: p.br, score: p.score, kills: p.kills, deaths: p.deaths, faction: p.faction, outcome: p.outcome, change: playerDelta, perf: parseFloat(acCarry.toFixed(2)), NewBR: p.br + playerDelta }
-  })
-}
-
-function calcDraw(team: PlayerCalcData[], teamBR: number, teamDelta: number): PlayerCalcResult[] {
-  const teamtot = team.reduce((s, p) => s + p.score, 0)
-  const drawBonus = 4
-  const avgKD = teamAvgKD(team)
-  return team.map((p) => {
-    const exCarry = p.br / teamBR
-    const ps = effectiveScore(p, avgKD)
-    const acCarry = teamtot === 0 ? 1 : (ps / teamtot) / (1 / team.length) / exCarry
-    const playerDelta = Math.round(teamDelta - (1 - acCarry) * 20) + drawBonus
-    return { id: p.id, br: p.br, score: p.score, kills: p.kills, deaths: p.deaths, faction: p.faction, outcome: p.outcome, change: playerDelta, perf: parseFloat(acCarry.toFixed(2)), NewBR: p.br + playerDelta }
-  })
 }
 
 // --- Component ---
@@ -212,14 +61,18 @@ export function RankedPage() {
   const [partnerlessRebel, setPartnerlessRebel] = useState<number | null>(null)
   const [partnerlessImperial, setPartnerlessImperial] = useState<number | null>(null)
   // Calculated results
-  const [calcResults, setCalcResults] = useState<{ rebels: PlayerCalcResult[]; imperials: PlayerCalcResult[] } | null>(null)
+  // Preview from the server (dry run), in the same order as rebels/imperials
+  const [calcResults, setCalcResults] = useState<{ rebels: RawMatchPlayerResult[]; imperials: RawMatchPlayerResult[] } | null>(null)
   const [calculated, setCalculated] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState(false)
 
   const rebelCircleRef = useRef<SVGCircleElement>(null)
   const imperialCircleRef = useRef<SVGCircleElement>(null)
-  const pendingMatchRef = useRef<{ map: string; teamSize: number; mvpId: number; rebelResult: number; imperialResult: number; rule: string } | null>(null)
+  // The exact input that was previewed, so Submit stores what the user saw
+  const pendingInputRef = useRef<RawMatchInput | null>(null)
+  // Ignores balance responses that arrive after the selection has changed again
+  const balanceSeq = useRef(0)
 
   useEffect(() => {
     getPlayers()
@@ -264,12 +117,20 @@ export function RankedPage() {
     )
   }, [available, search])
 
-  function runBalance(players: PlayerWithStats[]) {
-    const { team1, team2 } = generateCombinations(players)
-    setRebels(team1)
-    setImperials(team2)
-    setRebelAvg(avgBr(team1))
-    setImperialAvg(avgBr(team2))
+  async function runBalance(players: PlayerWithStats[]) {
+    const seq = ++balanceSeq.current
+    try {
+      const result = await balanceTeams('br', players.map((p) => p.id))
+      if (seq !== balanceSeq.current) return
+      const byId = new Map(players.map((p) => [p.id, p]))
+      const pick = (ids: number[]) => ids.map((id) => byId.get(id)).filter((p): p is PlayerWithStats => p !== undefined)
+      setRebels(pick(result.rebels))
+      setImperials(pick(result.imperials))
+      setRebelAvg(result.rebelAverage)
+      setImperialAvg(result.imperialAverage)
+    } catch (e) {
+      if (seq === balanceSeq.current) setError(e instanceof Error ? e.message : 'Failed to balance teams')
+    }
   }
 
   function resetScoreState() {
@@ -308,6 +169,7 @@ export function RankedPage() {
       runBalance(next)
       resetScoreState()
     } else if (next.length < MIN_PLAYERS) {
+      balanceSeq.current++
       setRebels([])
       setImperials([])
       setRebelAvg(0)
@@ -371,6 +233,7 @@ export function RankedPage() {
   }
 
   function handleReset() {
+    balanceSeq.current++
     setSelected([])
     setRebels([])
     setImperials([])
@@ -439,7 +302,7 @@ export function RankedPage() {
     return /^\d+$/.test(value.trim())
   }
 
-  function handleCalculate() {
+  async function handleCalculate() {
     setError('')
 
     if (!isNonNegativeInteger(rebelScore) || !isNonNegativeInteger(imperialScore)) {
@@ -484,84 +347,34 @@ export function RankedPage() {
       }
     }
 
-    let rebelOutcome: 'Won' | 'Lost' | 'Draw'
-    let imperialOutcome: 'Won' | 'Lost' | 'Draw'
-    if (rebelResult > imperialResult) {
-      rebelOutcome = 'Won'; imperialOutcome = 'Lost'
-    } else if (rebelResult < imperialResult) {
-      rebelOutcome = 'Lost'; imperialOutcome = 'Won'
-    } else {
-      rebelOutcome = 'Draw'; imperialOutcome = 'Draw'
+    const toInput = (team: PlayerWithStats[], faction: 'Rebel' | 'Imperial', partnerless: number | null) =>
+      team.map((p, i) => {
+        const key = `${faction.toLowerCase()}-${i}`
+        return {
+          playerId: p.id,
+          faction,
+          score: parseInt(playerScores[key] ?? '0', 10) || 0,
+          kills: parseInt(playerKills[key] ?? '0', 10) || 0,
+          deaths: parseInt(playerDeaths[key] ?? '0', 10) || 0,
+          partnerless: partnerless === i,
+        }
+      })
+    const input: RawMatchInput = {
+      map: currentMap,
+      rule: currentRule,
+      rebelScore: rebelResult,
+      imperialScore: imperialResult,
+      players: [...toInput(rebels, 'Rebel', partnerlessRebel), ...toInput(imperials, 'Imperial', partnerlessImperial)],
     }
 
-    const scoreDiff = Math.abs(rebelResult - imperialResult)
-    const rebelBR = Math.round(rebelAvg)
-    const imperialBR = Math.round(imperialAvg)
-
-    const expRebel = 1 / (1 + Math.pow(10, (imperialBR - rebelBR) / 400))
-    const expImperial = 1 / (1 + Math.pow(10, (rebelBR - imperialBR) / 400))
-
-    const rebelPlayers: PlayerCalcData[] = rebels.map((p, i) => ({
-      id: p.id,
-      br: p.br,
-      score: parseInt(playerScores[`rebel-${i}`] ?? '0') || 0,
-      kills: parseInt(playerKills[`rebel-${i}`] ?? '0') || 0,
-      deaths: parseInt(playerDeaths[`rebel-${i}`] ?? '0') || 0,
-      faction: 'Rebel',
-      outcome: rebelOutcome,
-      partnerless: partnerlessRebel === i,
-    }))
-    const imperialPlayers: PlayerCalcData[] = imperials.map((p, i) => ({
-      id: p.id,
-      br: p.br,
-      score: parseInt(playerScores[`imperial-${i}`] ?? '0') || 0,
-      kills: parseInt(playerKills[`imperial-${i}`] ?? '0') || 0,
-      deaths: parseInt(playerDeaths[`imperial-${i}`] ?? '0') || 0,
-      faction: 'Imperial',
-      outcome: imperialOutcome,
-      partnerless: partnerlessImperial === i,
-    }))
-
-    let rebelResults: PlayerCalcResult[]
-    let imperialResults: PlayerCalcResult[]
-
-    if (rebelOutcome === 'Won') {
-      const delta = Math.round(40 * (1 - expRebel))
-      rebelResults = calcWin(rebelPlayers, rebelBR, delta)
-      imperialResults = calcLoss(imperialPlayers, imperialBR, -delta, scoreDiff)
-    } else if (imperialOutcome === 'Won') {
-      const delta = Math.round(40 * (1 - expImperial))
-      rebelResults = calcLoss(rebelPlayers, rebelBR, -delta, scoreDiff)
-      imperialResults = calcWin(imperialPlayers, imperialBR, delta)
-    } else {
-      const rebelDelta = Math.round(40 * (0.5 - expRebel))
-      const imperialDelta = -rebelDelta
-      rebelResults = calcDraw(rebelPlayers, rebelBR, rebelDelta)
-      imperialResults = calcDraw(imperialPlayers, imperialBR, imperialDelta)
+    try {
+      const preview = await rateMatch(input, true)
+      setCalcResults({ rebels: preview.rebels, imperials: preview.imperials })
+      setCalculated(true)
+      pendingInputRef.current = input
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Calculation failed')
     }
-
-    // Determine MVP
-    let highestRebel = 0, highestImperial = 0
-    let mvpRebelId = 0, mvpImperialId = 0
-    let deltaRebel = 0, deltaImperial = 0
-    for (const r of rebelResults) {
-      if (r.score > highestRebel) { highestRebel = r.score; mvpRebelId = r.id; deltaRebel = r.change }
-    }
-    for (const r of imperialResults) {
-      if (r.score > highestImperial) { highestImperial = r.score; mvpImperialId = r.id; deltaImperial = r.change }
-    }
-    let mvpId: number
-    if (highestImperial > highestRebel) mvpId = mvpImperialId
-    else if (highestRebel > highestImperial) mvpId = mvpRebelId
-    else {
-      if (rebelOutcome === 'Won') mvpId = mvpRebelId
-      else if (imperialOutcome === 'Won') mvpId = mvpImperialId
-      else mvpId = deltaRebel > deltaImperial ? mvpRebelId : mvpImperialId
-    }
-
-    setCalcResults({ rebels: rebelResults, imperials: imperialResults })
-    setCalculated(true)
-    pendingMatchRef.current = { map: currentMap, teamSize, mvpId, rebelResult, imperialResult, rule: currentRule }
   }
 
   async function handleSubmit() {
@@ -569,32 +382,16 @@ export function RankedPage() {
       setError('Calculate scores first')
       return
     }
-    const md = pendingMatchRef.current
-    if (!md || !calcResults) return
+    const input = pendingInputRef.current
+    if (!input) return
 
     setSubmitting(true)
     setError('')
     try {
-      const toStat = (r: PlayerCalcResult): PlayerMatchStat => ({
-        id: r.id,
-        faction: r.faction,
-        outcome: r.outcome,
-        score: r.score,
-        perf: r.perf,
-        change: r.change,
-        NewBR: r.NewBR,
-        kills: r.kills,
-        deaths: r.deaths,
-      })
+      const result = await rateMatch(input, false)
 
-      const { nextMap, nextRule } = await submitMatch({
-        matchData: [md.map, md.teamSize, md.mvpId, md.rebelResult, md.imperialResult, md.rule],
-        rebels: calcResults.rebels.map(toStat),
-        imperials: calcResults.imperials.map(toStat),
-      })
-
-      setCurrentMap(nextMap)
-      setCurrentRule(nextRule)
+      setCurrentMap(result.nextMap ?? '')
+      setCurrentRule(result.nextRule ?? '')
 
       // Re-fetch players to get updated BR values
       const freshPlayers = await getPlayers()
@@ -689,7 +486,7 @@ export function RankedPage() {
             />
           </td>
           <td className="table__cell table__xs">{calcResults ? calcResults.rebels[index]?.change ?? 0 : 0}</td>
-          <td className="table__cell table__md">{calcResults ? calcResults.rebels[index]?.NewBR ?? player.br : player.br}</td>
+          <td className="table__cell table__md">{calcResults ? calcResults.rebels[index]?.newBr ?? player.br : player.br}</td>
         </tr>
       )
     }
@@ -757,7 +554,7 @@ export function RankedPage() {
             />
           </td>
           <td className="table__cell table__xs">{calcResults ? calcResults.imperials[index]?.change ?? 0 : 0}</td>
-          <td className="table__cell table__md">{calcResults ? calcResults.imperials[index]?.NewBR ?? player.br : player.br}</td>
+          <td className="table__cell table__md">{calcResults ? calcResults.imperials[index]?.newBr ?? player.br : player.br}</td>
         </tr>
       )
     }
