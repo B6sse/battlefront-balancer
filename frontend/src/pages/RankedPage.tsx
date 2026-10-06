@@ -186,7 +186,7 @@ function calcDraw(team: PlayerCalcData[], teamBR: number, teamDelta: number): Pl
 export function RankedPage() {
   usePageTitle('Ranked')
   const { user } = useAuth()
-  const canSubmit = user?.role === 'admin' || user?.role === 'supervisor'
+  const canSubmit = user?.role === 'admin' || user?.role === 'editor' || user?.role === 'supervisor'
 
   const [allPlayers, setAllPlayers] = useState<PlayerWithStats[]>([])
   const [selected, setSelected] = useState<PlayerWithStats[]>([])
@@ -201,7 +201,7 @@ export function RankedPage() {
   const [currentMap, setCurrentMap] = useState('')
   const [currentRule, setCurrentRule] = useState('')
 
-  // Score inputs (admin/supervisor only)
+  // Score inputs (admin/editor/supervisor only)
   const [rebelScore, setRebelScore] = useState<string>('')
   const [imperialScore, setImperialScore] = useState<string>('')
   // Per-player score/kills/deaths inputs: key = `${faction}-${index}`
