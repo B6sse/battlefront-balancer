@@ -36,6 +36,8 @@ export interface LastMatchPlayer {
   draw: number
   score: number
   mvp: number
+  personaId: number | null
+  lastSeenName: string | null
 }
 
 export async function getRandomizer(): Promise<RandomizerResult> {

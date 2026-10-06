@@ -5,6 +5,7 @@ export interface PlayerCreateRequest {
   nickname: string
   nation: string
   rating: number
+  personaId: number | null
 }
 
 export interface PlayerUpdateRequest {
@@ -13,6 +14,7 @@ export interface PlayerUpdateRequest {
   rating: number
   dzrating: number
   br: number
+  personaId: number | null
 }
 
 export function getPlayers(): Promise<PlayerWithStats[]> {

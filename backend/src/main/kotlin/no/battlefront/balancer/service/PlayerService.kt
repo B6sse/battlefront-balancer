@@ -61,43 +61,10 @@ class PlayerService(
                         .thenBy { it.nickname.lowercase() },
                 )
         }
-        return playerRepository.findAll().map { player ->
-            PlayerWithStatsDto(
-                id = player.id,
-                nickname = player.nickname,
-                nation = player.nation,
-                rating = player.rating,
-                dzrating = player.dzrating,
-                br = 0,
-                played = 0,
-                best = 0,
-                won = 0,
-                lost = 0,
-                draw = 0,
-                score = 0,
-                mvp = 0,
-            )
-        }
+        return playerRepository.findAll().map { it.toZeroStatsDto() }
     }
 
-    fun getAllPlayersForInternView(): List<PlayerWithStatsDto> =
-        playerRepository.findAll().map { player ->
-            PlayerWithStatsDto(
-                id = player.id,
-                nickname = player.nickname,
-                nation = player.nation,
-                rating = player.rating,
-                dzrating = player.dzrating,
-                br = 0,
-                played = 0,
-                best = 0,
-                won = 0,
-                lost = 0,
-                draw = 0,
-                score = 0,
-                mvp = 0,
-            )
-        }
+    fun getAllPlayersForInternView(): List<PlayerWithStatsDto> = playerRepository.findAll().map { it.toZeroStatsDto() }
 
     /**
      * Returns the match history for a player, newest first.
@@ -150,6 +117,7 @@ class PlayerService(
         require(nickname.isNotEmpty()) { "Name is required" }
         require(rating in 1..99) { "Rating must be between 1 and 99" }
         require(nation.length == 2) { "Nation must be a 2-letter code" }
+        requireValidPersonaId(request.personaId, playerId = null)
 
         val dzrating = rating
         val br =
@@ -165,7 +133,14 @@ class PlayerService(
         val best = br
         val season = currentSeasonRepository.findCurrentSeason() ?: 1
 
-        val player = Player(nickname = nickname, nation = nation, rating = rating, dzrating = dzrating)
+        val player =
+            Player(
+                nickname = nickname,
+                nation = nation,
+                rating = rating,
+                dzrating = dzrating,
+                personaId = request.personaId,
+            )
         val savedPlayer = playerRepository.save(player)
 
         val stats =
@@ -207,11 +182,13 @@ class PlayerService(
         require(dzrating in 1..99) { "DZ rating must be between 1 and 99" }
         require(br in 1..9999) { "BR must be between 1 and 9999" }
         require(nation.length == 2) { "Nation must be a 2-letter code" }
+        requireValidPersonaId(request.personaId, playerId = id)
 
         player.nickname = nickname
         player.nation = nation
         player.rating = rating
         player.dzrating = dzrating
+        player.personaId = request.personaId
         val savedPlayer = playerRepository.save(player)
 
         val season = currentSeasonRepository.findCurrentSeason() ?: 1
@@ -232,6 +209,19 @@ class PlayerService(
     fun deletePlayer(id: Long) {
         if (!playerRepository.existsById(id)) return
         playerRepository.deleteById(id)
+    }
+
+    /**
+     * Checks that [personaId] is positive and not already used by a player other than [playerId].
+     */
+    private fun requireValidPersonaId(
+        personaId: Long?,
+        playerId: Long?,
+    ) {
+        if (personaId == null) return
+        require(personaId > 0) { "Persona ID must be a positive number" }
+        val owner = playerRepository.findByPersonaId(personaId)
+        require(owner == null || owner.id == playerId) { "Persona ID is already used by ${owner?.nickname}" }
     }
 
     private fun getPlayersForSeason(season: Int): List<PlayerWithStatsDto> {
@@ -282,6 +272,8 @@ class PlayerService(
                     draw = stats.sumOf { it.draw },
                     score = stats.sumOf { it.score },
                     mvp = stats.sumOf { it.mvp },
+                    personaId = player.personaId,
+                    lastSeenName = player.lastSeenName,
                 ) to weightedAvgBr
             }.sortedWith(
                 compareByDescending<Pair<PlayerWithStatsDto, Double>> { it.first.played >= 5 }
@@ -305,5 +297,26 @@ class PlayerService(
             draw = draw,
             score = score,
             mvp = mvp,
+            personaId = player.personaId,
+            lastSeenName = player.lastSeenName,
+        )
+
+    private fun Player.toZeroStatsDto() =
+        PlayerWithStatsDto(
+            id = id,
+            nickname = nickname,
+            nation = nation,
+            rating = rating,
+            dzrating = dzrating,
+            br = 0,
+            played = 0,
+            best = 0,
+            won = 0,
+            lost = 0,
+            draw = 0,
+            score = 0,
+            mvp = 0,
+            personaId = personaId,
+            lastSeenName = lastSeenName,
         )
 }

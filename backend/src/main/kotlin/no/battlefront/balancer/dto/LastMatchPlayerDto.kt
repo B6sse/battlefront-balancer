@@ -16,6 +16,8 @@ package no.battlefront.balancer.dto
  * @param draw draws
  * @param score total score
  * @param mvp MVP count
+ * @param personaId EA persona ID, or null if unknown
+ * @param lastSeenName in-game name last reported for this player, or null
  */
 data class LastMatchPlayerDto(
     val id: Long,
@@ -30,4 +32,6 @@ data class LastMatchPlayerDto(
     val draw: Int,
     val score: Int,
     val mvp: Int,
+    val personaId: Long? = null,
+    val lastSeenName: String? = null,
 )

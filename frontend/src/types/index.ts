@@ -50,6 +50,8 @@ export interface PlayerWithStats {
   draw: number
   score: number
   mvp: number
+  personaId: number | null
+  lastSeenName: string | null
 }
 
 /** One entry in a player's match history (GET /api/players/{id}/matches). */

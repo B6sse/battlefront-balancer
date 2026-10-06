@@ -49,12 +49,28 @@ function validateBr(v: string): string | null {
   return null
 }
 
+/** Persona ID is optional; EA persona IDs are 13 digits, so 15 keeps them within JS safe integers. */
+function validatePersonaId(v: string, players: PlayerWithStats[], playerId: number | null): string | null {
+  const t = v.trim()
+  if (!t) return null
+  if (!/^\d{1,15}$/.test(t) || parseInt(t, 10) < 1) return 'Persona ID must be a positive whole number'
+  const owner = players.find((p) => p.personaId === parseInt(t, 10) && p.id !== playerId)
+  if (owner) return `Persona ID is already used by ${owner.nickname}`
+  return null
+}
+
+function parsePersonaId(v: string): number | null {
+  const t = v.trim()
+  return t ? parseInt(t, 10) : null
+}
+
 interface EditState {
   nickname: string
   nation: string
   rating: string
   dzrating: string
   br: string
+  personaId: string
 }
 
 function toEditState(p: PlayerWithStats): EditState {
@@ -64,6 +80,7 @@ function toEditState(p: PlayerWithStats): EditState {
     rating: String(p.rating),
     dzrating: String(p.dzrating),
     br: String(p.br),
+    personaId: p.personaId === null ? '' : String(p.personaId),
   }
 }
 
@@ -79,7 +96,7 @@ export function AdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
-  const [addForm, setAddForm] = useState({ nickname: '', nation: '', rating: '' })
+  const [addForm, setAddForm] = useState({ nickname: '', nation: '', rating: '', personaId: '' })
   const [addError, setAddError] = useState<string | null>(null)
   const [addLoading, setAddLoading] = useState(false)
 
@@ -260,18 +277,21 @@ export function AdminPage() {
     if (errDz) { setError(errDz); return }
     const errBr = validateBr(editState.br)
     if (errBr) { setError(errBr); return }
+    const errPersona = validatePersonaId(editState.personaId, players, id)
+    if (errPersona) { setError(errPersona); return }
 
     const rating = parseInt(editState.rating, 10)
     const dzrating = parseInt(editState.dzrating, 10)
     const br = parseInt(editState.br, 10)
     const nickname = editState.nickname.trim()
     const nation = editState.nation.trim().toLowerCase()
+    const personaId = parsePersonaId(editState.personaId)
 
     setSavingId(id)
     try {
-      const req: PlayerUpdateRequest = { nickname, nation, rating, dzrating, br }
+      const req: PlayerUpdateRequest = { nickname, nation, rating, dzrating, br, personaId }
       await updatePlayer(id, req)
-      setPlayers((prev) => prev.map((p) => p.id === id ? { ...p, nickname, nation, rating, dzrating, br } : p))
+      setPlayers((prev) => prev.map((p) => p.id === id ? { ...p, nickname, nation, rating, dzrating, br, personaId } : p))
       setEditingId(null)
       setEditState(null)
       showSuccess(`${nickname} updated`)
@@ -309,18 +329,21 @@ export function AdminPage() {
     if (errNation) { setAddError(errNation); return }
     const errRating = validateRating(addForm.rating)
     if (errRating) { setAddError(errRating); return }
+    const errPersona = validatePersonaId(addForm.personaId, players, null)
+    if (errPersona) { setAddError(errPersona); return }
 
     const rating = parseInt(addForm.rating, 10)
     const nickname = addForm.nickname.trim()
     const nation = addForm.nation.trim().toLowerCase()
+    const personaId = parsePersonaId(addForm.personaId)
 
     setAddLoading(true)
     try {
-      const req: PlayerCreateRequest = { nickname, nation, rating }
+      const req: PlayerCreateRequest = { nickname, nation, rating, personaId }
       const created = await createPlayer(req)
       const fresh = await getPlayers()
       setPlayers(fresh)
-      setAddForm({ nickname: '', nation: '', rating: '' })
+      setAddForm({ nickname: '', nation: '', rating: '', personaId: '' })
       showSuccess(`${created.nickname} added`)
     } catch (err) {
       setAddError(err instanceof Error ? err.message : 'Add failed')
@@ -358,17 +381,18 @@ export function AdminPage() {
               <table className="table__content table__search" style={{ minWidth: '100%' }}>
                 <thead className="table__head table__sticky">
                   <tr>
-                    <th className="head__cell head__player" style={{ width: '35%' }}>Name</th>
-                    <th className="head__cell" style={{ width: '10%' }}>Nation</th>
-                    <th className="head__cell" style={{ width: '10%' }}>Rating</th>
-                    <th className="head__cell" style={{ width: '10%' }}>DZ</th>
-                    <th className="head__cell" style={{ width: '10%' }}>BR</th>
-                    <th className="head__cell" style={{ width: '15%' }}>Action</th>
+                    <th className="head__cell head__player" style={{ width: '30%' }}>Name</th>
+                    <th className="head__cell" style={{ width: '8%' }}>Nation</th>
+                    <th className="head__cell" style={{ width: '8%' }}>Rating</th>
+                    <th className="head__cell" style={{ width: '8%' }}>DZ</th>
+                    <th className="head__cell" style={{ width: '8%' }}>BR</th>
+                    <th className="head__cell" style={{ width: '18%' }}>Persona ID</th>
+                    <th className="head__cell" style={{ width: '12%' }}>Action</th>
                   </tr>
                 </thead>
                 <tbody className="table__body">
                   {loading ? (
-                    <tr><td colSpan={6} style={{ padding: '20px', textAlign: 'center' }}>Loading...</td></tr>
+                    <tr><td colSpan={7} style={{ padding: '20px', textAlign: 'center' }}>Loading...</td></tr>
                   ) : filtered.map((p, i) => {
                     const isEditing = editingId === p.id
                     const isSaving = savingId === p.id
@@ -424,6 +448,17 @@ export function AdminPage() {
                                 disabled={isSaving}
                               />
                             </td>
+                            <td className="table__cell">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={15}
+                                placeholder="None"
+                                value={editState.personaId}
+                                onChange={(e) => handleEditChange('personaId', e.target.value.replace(/\D/g, ''))}
+                                disabled={isSaving}
+                              />
+                            </td>
                             <td className="table__cell table__action">
                               <ul className="list">
                                 <li>
@@ -454,13 +489,24 @@ export function AdminPage() {
                               <ul className="list list__player">
                                 <li>{i + 1}</li>
                                 <li><img src={`${FLAG_BASE}/${p.nation || 'aq'}.svg`} alt={p.nation} /></li>
-                                <li>{p.nickname}</li>
+                                <li>
+                                  {p.nickname}
+                                  {p.lastSeenName && p.lastSeenName !== p.nickname && (
+                                    <span
+                                      title="Last seen in game as"
+                                      style={{ display: 'block', color: 'var(--color-text-muted)', fontSize: '1.2rem' }}
+                                    >
+                                      {p.lastSeenName}
+                                    </span>
+                                  )}
+                                </li>
                               </ul>
                             </td>
                             <td className="table__cell">{p.nation}</td>
                             <td className="table__cell">{p.rating}</td>
                             <td className="table__cell">{p.dzrating}</td>
                             <td className="table__cell">{p.br}</td>
+                            <td className="table__cell">{p.personaId ?? '–'}</td>
                             <td className="table__cell table__action">
                               <ul className="list">
                                 <li>
@@ -522,6 +568,17 @@ export function AdminPage() {
                 placeholder="Rating"
                 value={addForm.rating}
                 onChange={(e) => setAddForm((f) => ({ ...f, rating: e.target.value }))}
+                disabled={addLoading}
+                autoComplete="off"
+              />
+              <input
+                className="input sound__hover"
+                type="text"
+                inputMode="numeric"
+                maxLength={15}
+                placeholder="Persona ID (optional)"
+                value={addForm.personaId}
+                onChange={(e) => setAddForm((f) => ({ ...f, personaId: e.target.value.replace(/\D/g, '') }))}
                 disabled={addLoading}
                 autoComplete="off"
               />

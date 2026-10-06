@@ -232,6 +232,8 @@ class MatchService(
                 draw = pstat.draw,
                 score = pstat.score,
                 mvp = pstat.mvp,
+                personaId = player.personaId,
+                lastSeenName = player.lastSeenName,
             )
         }
     }
