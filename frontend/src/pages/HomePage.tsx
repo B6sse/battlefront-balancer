@@ -126,8 +126,8 @@ export function HomePage() {
         setInternPlayers(Array.isArray(intern) ? intern : [])
         setRankedPlayers(Array.isArray(ranked) ? ranked : [])
       })
-      .catch((err) => {
-        setPlayersError(err instanceof Error ? err.message : 'Kunne ikke laste spillere')
+      .catch(() => {
+        setPlayersError('Failed to load players. Please try again later.')
       })
       .finally(() => setLoading(false))
   }, [])
@@ -322,7 +322,7 @@ export function HomePage() {
                     ) : playersError ? (
                       <tr>
                         <td colSpan={viewMode === 'intern' ? 4 : 6} className="table__cell">
-                          {playersError}. Sjekk at backend kjører på port 8080.
+                          {playersError}
                         </td>
                       </tr>
                     ) : filteredPlayers.length === 0 ? (
