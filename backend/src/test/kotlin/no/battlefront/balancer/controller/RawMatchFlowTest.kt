@@ -32,9 +32,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import org.springframework.web.context.WebApplicationContext
-import java.time.Instant
 import java.time.LocalDateTime
-import java.time.ZoneId
 
 /**
  * End-to-end test of POST /api/matches/raw through HTTP, security and the database (H2).
@@ -154,7 +152,8 @@ class RawMatchFlowTest {
         val match = rankedMatchRepository.findAll().single()
         assertEquals(supervisor.id, match.supervisorId)
         assertEquals(4, match.teamSize)
-        assertEquals(LocalDateTime.ofInstant(Instant.parse("2026-10-06T19:14:40Z"), ZoneId.systemDefault()), match.date)
+        // 19:14 UTC is 21:14 in Oslo (CEST)
+        assertEquals(LocalDateTime.of(2026, 10, 6, 21, 14, 40), match.date)
         assertEquals(8, rankedMatchStatRepository.findByMatchId(match.id).size)
 
         val first = rankedPlayerStatRepository.findByPlayerIdAndSeason(players[0].id, 1)!!

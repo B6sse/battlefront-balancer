@@ -1,5 +1,6 @@
 package no.battlefront.balancer.service
 
+import no.battlefront.balancer.APP_TIME_ZONE
 import no.battlefront.balancer.dto.PlayerMatchStatDto
 import no.battlefront.balancer.dto.RatedPlayer
 import no.battlefront.balancer.dto.RatingPlayer
@@ -157,7 +158,7 @@ class RawMatchService(
     private fun parseEndedAt(endedAt: String?): LocalDateTime {
         if (endedAt.isNullOrBlank()) return LocalDateTime.now()
         return try {
-            LocalDateTime.ofInstant(Instant.parse(endedAt), ZoneId.systemDefault())
+            LocalDateTime.ofInstant(Instant.parse(endedAt), ZoneId.of(APP_TIME_ZONE))
         } catch (e: DateTimeParseException) {
             throw IllegalArgumentException("endedAt must be an ISO-8601 instant, e.g. 2026-10-06T19:14:40Z")
         }

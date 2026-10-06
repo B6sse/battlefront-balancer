@@ -7,7 +7,7 @@ package no.battlefront.balancer.dto
  * @param rule community rule (DSE, DACE, ...); stored as "?" when missing
  * @param rebelScore pods captured by the Rebels (0–5)
  * @param imperialScore pods captured by the Imperials (0–5)
- * @param endedAt when the map ended (ISO-8601 instant, e.g. "2026-10-06T19:14:40Z"); defaults to now
+ * @param endedAt when the map ended (ISO-8601 instant, e.g. "2026-10-06T19:14:40Z"); stored in Oslo time, defaults to now
  */
 data class RawMatchRequest(
     val map: String,
