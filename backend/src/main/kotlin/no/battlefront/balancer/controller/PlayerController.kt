@@ -35,6 +35,19 @@ class PlayerController(
     }
 
     /**
+     * Returns registered players for the given EA persona IDs (e.g. `?ids=1,2,3`) plus the IDs that match no player.
+     */
+    @GetMapping("/players/by-persona")
+    fun getPlayersByPersona(
+        @RequestParam ids: List<Long>,
+    ): ResponseEntity<Any> =
+        try {
+            ResponseEntity.ok(playerService.getPlayersByPersonaIds(ids))
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.badRequest().body(mapOf("message" to (e.message ?: "Invalid request")))
+        }
+
+    /**
      * Returns the match history for a player, newest first.
      * Omit season for current season, pass "all" for all seasons.
      */

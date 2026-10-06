@@ -4,6 +4,7 @@ import no.battlefront.balancer.dto.PlayerCreateRequest
 import no.battlefront.balancer.dto.PlayerMatchHistoryDto
 import no.battlefront.balancer.dto.PlayerUpdateRequest
 import no.battlefront.balancer.dto.PlayerWithStatsDto
+import no.battlefront.balancer.dto.PlayersByPersonaDto
 import no.battlefront.balancer.model.Player
 import no.battlefront.balancer.model.RankedPlayerStat
 import no.battlefront.balancer.repository.CurrentSeasonRepository
@@ -65,6 +66,27 @@ class PlayerService(
     }
 
     fun getAllPlayersForInternView(): List<PlayerWithStatsDto> = playerRepository.findAll().map { it.toZeroStatsDto() }
+
+    /**
+     * Returns players with current-season stats for the given persona IDs (in request order, duplicates removed),
+     * plus the IDs that belong to no player. Players without stats this season get zero stats.
+     *
+     * @throws IllegalArgumentException if more than [MAX_PERSONA_LOOKUP] IDs are requested.
+     */
+    fun getPlayersByPersonaIds(personaIds: List<Long>): PlayersByPersonaDto {
+        val ids = personaIds.distinct()
+        require(ids.size <= MAX_PERSONA_LOOKUP) { "At most $MAX_PERSONA_LOOKUP persona IDs per request" }
+        if (ids.isEmpty()) return PlayersByPersonaDto(emptyList(), emptyList())
+
+        val byPersona = playerRepository.findByPersonaIdIn(ids).associateBy { it.personaId }
+        val season = currentSeasonRepository.findCurrentSeason() ?: 1
+        val stats =
+            rankedPlayerStatRepository
+                .findBySeasonAndPlayerIdIn(season, byPersona.values.map { it.id })
+                .associateBy { it.playerId }
+        val players = ids.mapNotNull { byPersona[it] }.map { p -> stats[p.id]?.toDto(p) ?: p.toZeroStatsDto() }
+        return PlayersByPersonaDto(players, ids.filter { it !in byPersona })
+    }
 
     /**
      * Returns the match history for a player, newest first.
@@ -319,4 +341,8 @@ class PlayerService(
             personaId = personaId,
             lastSeenName = lastSeenName,
         )
+
+    private companion object {
+        const val MAX_PERSONA_LOOKUP = 64
+    }
 }

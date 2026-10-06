@@ -17,6 +17,11 @@ interface RankedPlayerStatRepository : JpaRepository<RankedPlayerStat, Long> {
         season: Int,
     ): RankedPlayerStat?
 
+    fun findBySeasonAndPlayerIdIn(
+        season: Int,
+        playerIds: Collection<Long>,
+    ): List<RankedPlayerStat>
+
     @Modifying
     @Query("DELETE FROM RankedPlayerStat r WHERE r.season = :season AND r.played = 0")
     fun deleteBySeasonAndPlayedZero(season: Int): Int

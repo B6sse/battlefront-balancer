@@ -91,6 +91,7 @@ class SecurityConfig {
                         HttpMethod.GET,
                         "/api/health",
                         "/api/players",
+                        "/api/players/by-persona",
                         "/api/players/*/matches",
                         "/api/randomizer",
                         "/api/last-match",
@@ -98,7 +99,7 @@ class SecurityConfig {
                         "/api/matches",
                         "/api/matches/*",
                     ).permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/login", "/api/logout")
+                    .requestMatchers(HttpMethod.POST, "/api/login", "/api/logout", "/api/balance")
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/admin/**")
                     .hasAuthority("ROLE_admin")

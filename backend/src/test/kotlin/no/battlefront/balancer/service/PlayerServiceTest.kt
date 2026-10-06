@@ -377,6 +377,29 @@ class PlayerServiceTest {
     }
 
     @Test
+    fun `getPlayersByPersonaIds returns players in request order and lists unknown IDs`() {
+        val a = Player(id = 1L, nickname = "A", nation = "no", rating = 80, dzrating = 80, personaId = 101L)
+        val b = Player(id = 2L, nickname = "B", nation = "se", rating = 70, dzrating = 70, personaId = 102L)
+        `when`(playerRepository.findByPersonaIdIn(listOf(102L, 999L, 101L))).thenReturn(listOf(a, b))
+        `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(2)
+        `when`(rankedPlayerStatRepository.findBySeasonAndPlayerIdIn(2, listOf(1L, 2L)))
+            .thenReturn(listOf(RankedPlayerStat(playerId = 2L, season = 2, br = 1111)))
+
+        val result = service.getPlayersByPersonaIds(listOf(102L, 999L, 101L, 102L))
+
+        assertEquals(listOf("B", "A"), result.players.map { it.nickname })
+        assertEquals(1111, result.players[0].br)
+        assertEquals(0, result.players[1].br)
+        assertEquals(listOf(999L), result.unknown)
+    }
+
+    @Test
+    fun `getPlayersByPersonaIds handles empty and too long lists`() {
+        assertEquals(0, service.getPlayersByPersonaIds(emptyList()).players.size)
+        assertThrows<IllegalArgumentException> { service.getPlayersByPersonaIds((1L..65L).toList()) }
+    }
+
+    @Test
     fun `player DTOs include persona ID and last seen name`() {
         `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
         val player =
