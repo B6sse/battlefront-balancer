@@ -103,7 +103,7 @@ class SecurityConfig {
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/players", "/api/players/by-persona")
                     .hasAuthority(HostTokenAuthenticationFilter.ROLE_HOST)
-                    .requestMatchers(HttpMethod.POST, "/api/balance")
+                    .requestMatchers(HttpMethod.POST, "/api/balance", "/api/player-requests")
                     .hasAuthority(HostTokenAuthenticationFilter.ROLE_HOST)
                     .anyRequest()
                     .denyAll()
@@ -178,6 +178,14 @@ class SecurityConfig {
                     .hasAnyAuthority("ROLE_admin", "ROLE_editor")
                     .requestMatchers(HttpMethod.DELETE, "/api/players/*")
                     .hasAnyAuthority("ROLE_admin", "ROLE_editor")
+                    .requestMatchers(HttpMethod.GET, "/api/player-requests")
+                    .hasAnyAuthority("ROLE_admin", "ROLE_editor")
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/player-requests/*/approve",
+                        "/api/player-requests/*/link",
+                        "/api/player-requests/*/reject",
+                    ).hasAnyAuthority("ROLE_admin", "ROLE_editor")
                     .anyRequest()
                     .denyAll()
             }.formLogin { it.disable() }
