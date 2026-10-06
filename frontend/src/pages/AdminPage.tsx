@@ -7,6 +7,7 @@ import { getCurrentSeason, startNextSeason, cleanupSeason, getUsers, updateUserR
 import type { UserDto } from '../api/admin'
 import { useAuth } from '../context/AuthContext'
 import { HostTokensPanel } from '../components/HostTokensPanel'
+import { PlayerRequestsPanel } from '../components/PlayerRequestsPanel'
 import type { PlayerWithStats } from '../types'
 
 const FLAG_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/2.8.0/flags/4x3'
@@ -591,6 +592,8 @@ export function AdminPage() {
             </button>
           </form>
         </div>
+
+        <PlayerRequestsPanel onPlayersChanged={() => getPlayers().then(setPlayers)} onSuccess={showSuccess} />
 
         {weights && (
           <div className="table randomizer-weights">
