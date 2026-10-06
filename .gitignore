@@ -47,6 +47,9 @@ backend/.env.local
 backend/application-local.yml
 backend/src/main/resources/application-local.yml
 
+### Database seed (contains user credentials) ###
+docker/postgres/local/
+
 ### Frontend (npm) ###
 frontend/node_modules/
 frontend/dist/

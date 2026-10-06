@@ -42,6 +42,19 @@ docker compose up -d
 
 Stop: `docker compose down`.
 
+### Database schema and seed data
+
+The schema is managed by **Flyway**. Migrations live in `backend/src/main/resources/db/migration/`
+(`V1__schema.sql`, `V2__...`) and run automatically when the backend starts. To change the schema, add a new
+`V<n>__description.sql` file; never edit a migration that has already run.
+
+Seed data (players, matches, users) is kept out of git because it contains user credentials. Place it in
+`docker/postgres/local/seed.sql` (git-ignored) and load it once, after the backend has started and created the schema:
+
+```bash
+docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < docker/postgres/local/seed.sql
+```
+
 ## Code quality (ktlint + kover)
 
 The backend uses:
@@ -91,7 +104,7 @@ The backend uses:
 │   │   └── styles/
 │   └── Dockerfile
 ├── docker/
-│   └── postgres/init.sql
+│   └── postgres/local/     # Git-ignored seed data
 ├── docker-compose.yml      # Full stack
 ```
 
