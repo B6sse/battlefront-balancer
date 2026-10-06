@@ -6,6 +6,7 @@ import type { RandomizerWeightEntry, RandomizerWeightsResponse } from '../api/ra
 import { getCurrentSeason, startNextSeason, cleanupSeason, getUsers, updateUserRole, deleteUser } from '../api/admin'
 import type { UserDto } from '../api/admin'
 import { useAuth } from '../context/AuthContext'
+import { HostTokensPanel } from '../components/HostTokensPanel'
 import type { PlayerWithStats } from '../types'
 
 const FLAG_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/2.8.0/flags/4x3'
@@ -576,7 +577,8 @@ export function AdminPage() {
                 type="text"
                 inputMode="numeric"
                 maxLength={15}
-                placeholder="Persona ID (optional)"
+                placeholder="Persona ID"
+                title="EA persona ID (optional)"
                 value={addForm.personaId}
                 onChange={(e) => setAddForm((f) => ({ ...f, personaId: e.target.value.replace(/\D/g, '') }))}
                 disabled={addLoading}
@@ -684,6 +686,8 @@ export function AdminPage() {
             </div>
           </div>
         )}
+
+        {users !== null && <HostTokensPanel users={users} onSuccess={showSuccess} />}
 
         {currentSeason !== null && cleanupSelectedSeason !== null && (
           <div className="table">
