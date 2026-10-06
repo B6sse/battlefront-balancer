@@ -10,7 +10,7 @@ function formatDate(iso: string | null): string {
 
 /**
  * Admin panel for Auric host tokens: create (token shown once), list and revoke.
- * Matches uploaded with a token get the token's owner as supervisor, so only admins and supervisors can own one.
+ * Matches uploaded with a token get the token's owner as supervisor. Admins, supervisors and editors can own one.
  */
 export function HostTokensPanel({ users, onSuccess }: { users: UserDto[]; onSuccess: (msg: string) => void }) {
   const [tokens, setTokens] = useState<HostTokenDto[] | null>(null)
@@ -22,7 +22,7 @@ export function HostTokensPanel({ users, onSuccess }: { users: UserDto[]; onSucc
   const [copied, setCopied] = useState(false)
   const [revokeConfirmId, setRevokeConfirmId] = useState<number | null>(null)
 
-  const owners = users.filter((u) => u.role === 'admin' || u.role === 'supervisor')
+  const owners = users.filter((u) => u.role === 'admin' || u.role === 'supervisor' || u.role === 'editor')
 
   useEffect(() => {
     getHostTokens()

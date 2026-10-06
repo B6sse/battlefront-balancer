@@ -4,7 +4,7 @@ package no.battlefront.balancer.dto
  * Request body for POST /api/admin/host-tokens.
  *
  * @param name label for the token, e.g. the host's name
- * @param userId admin/supervisor who owns the token
+ * @param userId admin, supervisor or editor who owns the token
  */
 data class HostTokenCreateRequest(
     val name: String,

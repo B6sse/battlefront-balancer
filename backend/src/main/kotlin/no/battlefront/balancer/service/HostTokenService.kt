@@ -49,7 +49,7 @@ class HostTokenService(
     /**
      * Creates a token owned by [HostTokenCreateRequest.userId] and returns it in plain text (the only time it is visible).
      *
-     * @throws IllegalArgumentException if the name is blank or too long, or the owner is not an admin/supervisor.
+     * @throws IllegalArgumentException if the name is blank or too long, or the owner is not an admin, supervisor or editor.
      */
     @Transactional
     fun createToken(request: HostTokenCreateRequest): HostTokenCreatedDto {
@@ -57,7 +57,7 @@ class HostTokenService(
         require(name.isNotEmpty()) { "Name is required" }
         require(name.length <= 100) { "Name max 100 characters" }
         val owner = userRepository.findById(request.userId).orElse(null) ?: throw IllegalArgumentException("User not found")
-        require(owner.role in HOST_ROLES) { "Token owner must be an admin or supervisor" }
+        require(owner.role in HOST_ROLES) { "Token owner must be an admin, supervisor or editor" }
 
         val token = generateToken()
         val saved =
@@ -83,7 +83,7 @@ class HostTokenService(
     /**
      * Verifies a plain token and records its use.
      *
-     * @return the [HostPrincipal], or null if the token is unknown, revoked, or its owner is no longer an admin/supervisor.
+     * @return the [HostPrincipal], or null if the token is unknown, revoked, or its owner no longer has a role that may own tokens.
      */
     @Transactional
     fun authenticate(rawToken: String): HostPrincipal? {
@@ -106,7 +106,7 @@ class HostTokenService(
     internal fun hash(token: String): String = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(token.toByteArray()))
 
     private companion object {
-        val HOST_ROLES = setOf("admin", "supervisor")
+        val HOST_ROLES = setOf("admin", "supervisor", "editor")
         const val TOKEN_BYTES = 32
     }
 }

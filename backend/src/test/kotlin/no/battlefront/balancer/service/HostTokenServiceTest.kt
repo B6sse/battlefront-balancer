@@ -59,16 +59,29 @@ class HostTokenServiceTest {
     }
 
     @Test
+    fun `editors can own tokens`() {
+        val editor = User(id = 5L, username = "ed", password = "x", role = "editor")
+        `when`(userRepository.findById(5L)).thenReturn(Optional.of(editor))
+        `when`(hostTokenRepository.save(any(HostToken::class.java))).thenAnswer { it.getArgument(0) }
+
+        val created = service.createToken(HostTokenCreateRequest(name = "Ed PC", userId = 5L))
+        `when`(hostTokenRepository.findByTokenHash(service.hash(created.token)))
+            .thenReturn(HostToken(id = 9L, name = "Ed PC", tokenHash = service.hash(created.token), userId = 5L))
+
+        assertEquals(HostPrincipal(tokenId = 9L, userId = 5L, name = "Ed PC"), service.authenticate(created.token))
+    }
+
+    @Test
     fun `createToken validates name and owner role`() {
-        val editor = User(id = 4L, username = "ed", password = "x", role = "editor")
-        `when`(userRepository.findById(4L)).thenReturn(Optional.of(editor))
+        val other = User(id = 4L, username = "ed", password = "x", role = "viewer")
+        `when`(userRepository.findById(4L)).thenReturn(Optional.of(other))
         `when`(userRepository.findById(99L)).thenReturn(Optional.empty())
 
         assertThrows<IllegalArgumentException> { service.createToken(HostTokenCreateRequest(name = "  ", userId = 3L)) }
         assertThrows<IllegalArgumentException> { service.createToken(HostTokenCreateRequest(name = "x".repeat(101), userId = 3L)) }
         assertThrows<IllegalArgumentException> { service.createToken(HostTokenCreateRequest(name = "A", userId = 99L)) }
         val ex = assertThrows<IllegalArgumentException> { service.createToken(HostTokenCreateRequest(name = "A", userId = 4L)) }
-        assertEquals("Token owner must be an admin or supervisor", ex.message)
+        assertEquals("Token owner must be an admin, supervisor or editor", ex.message)
     }
 
     private fun stored(revokedAt: LocalDateTime? = null) =
@@ -95,9 +108,9 @@ class HostTokenServiceTest {
     }
 
     @Test
-    fun `authenticate rejects a token whose owner is no longer a supervisor`() {
+    fun `authenticate rejects a token whose owner lost a token role`() {
         `when`(hostTokenRepository.findByTokenHash(service.hash("secret"))).thenReturn(stored())
-        `when`(userRepository.findById(3L)).thenReturn(Optional.of(User(id = 3L, username = "purpoz", password = "x", role = "editor")))
+        `when`(userRepository.findById(3L)).thenReturn(Optional.of(User(id = 3L, username = "purpoz", password = "x", role = "viewer")))
 
         assertNull(service.authenticate("secret"))
     }

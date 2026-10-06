@@ -12,7 +12,7 @@ import java.time.LocalDateTime
  * API token that lets an Auric host call the host endpoints. The plain token is never stored.
  *
  * @param tokenHash hex-encoded SHA-256 of the token
- * @param userId admin/supervisor who owns the token; becomes the supervisor of matches uploaded with it
+ * @param userId admin, supervisor or editor who owns the token; becomes the supervisor of matches uploaded with it
  * @param createdBy admin who created the token, or null if that user was deleted
  * @param revokedAt when the token was revoked; a revoked token no longer authenticates
  */
