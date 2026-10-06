@@ -38,23 +38,29 @@ class RawMatchService(
     /**
      * Rates and stores the match. The supervisor is the current user, or the token owner for Auric.
      *
+     * @param dryRun only compute and return the result; nothing is stored and the randomizer is not advanced
      * @throws IllegalArgumentException on invalid input (team sizes, ranges, duplicates, players without BR).
      * @throws UnknownPlayersException if any persona ID belongs to no player; nothing is stored then.
      */
     @Transactional
-    fun submit(request: RawMatchRequest): RawMatchResultDto {
+    fun submit(
+        request: RawMatchRequest,
+        dryRun: Boolean = false,
+    ): RawMatchResultDto {
         val supervisorId = currentUserService.currentUserId() ?: throw AccessDeniedException("Not authenticated")
         validate(request)
         val date = parseEndedAt(request.endedAt)
         val players = resolvePlayers(request.players)
         require(players.map { it.id }.toSet().size == players.size) { "The same player appears more than once" }
 
-        request.players.zip(players).forEach { (raw, player) ->
-            raw.name
-                ?.trim()
-                ?.take(100)
-                ?.ifEmpty { null }
-                ?.let { player.lastSeenName = it }
+        if (!dryRun) {
+            request.players.zip(players).forEach { (raw, player) ->
+                raw.name
+                    ?.trim()
+                    ?.take(100)
+                    ?.ifEmpty { null }
+                    ?.let { player.lastSeenName = it }
+            }
         }
 
         val season = currentSeasonRepository.findCurrentSeason() ?: 1
@@ -78,6 +84,17 @@ class RawMatchService(
                 ?.trim()
                 ?.take(50)
                 ?.ifEmpty { null } ?: "?"
+        val byId = players.associateBy { it.id }
+
+        fun results(rated: List<RatedPlayer>) =
+            rated.map { r ->
+                val p = byId.getValue(r.playerId)
+                RawMatchPlayerResultDto(p.id, p.personaId, p.nickname, r.outcome, r.score, r.perf, r.change, r.newBr)
+            }
+        if (dryRun) {
+            return RawMatchResultDto(null, map, rule, rating.mvpId, results(rating.rebels), results(rating.imperials), null, null)
+        }
+
         val match =
             matchService.recordMatch(
                 map = map,
@@ -91,14 +108,6 @@ class RawMatchService(
                 date = date,
             )
         val next = randomizerService.pickAndSave()
-
-        val byId = players.associateBy { it.id }
-
-        fun results(rated: List<RatedPlayer>) =
-            rated.map { r ->
-                val p = byId.getValue(r.playerId)
-                RawMatchPlayerResultDto(p.id, p.personaId, p.nickname, r.outcome, r.score, r.perf, r.change, r.newBr)
-            }
         return RawMatchResultDto(
             matchId = match.id,
             map = map,

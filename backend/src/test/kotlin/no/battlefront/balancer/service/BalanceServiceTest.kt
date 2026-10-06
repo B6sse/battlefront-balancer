@@ -31,7 +31,7 @@ class BalanceServiceTest {
 
     private fun split(players: List<BalanceService.Candidate>): Pair<List<Long>, List<Long>> {
         val (team1, team2) = service.splitTeams(players)
-        return team1.map { it.personaId } to team2.map { it.personaId }
+        return team1.map { it.id } to team2.map { it.id }
     }
 
     @Test
@@ -119,6 +119,26 @@ class BalanceServiceTest {
 
         assertEquals(80.0, service.balance(BalanceRequest("rating", listOf(101, 102))).rebelAverage)
         assertEquals(50.0, service.balance(BalanceRequest("dzrating", listOf(101, 102))).rebelAverage)
+    }
+
+    @Test
+    fun `balance accepts player ids and answers with player ids`() {
+        val players = listOf(player(1, 101, 90), player(2, 102, 80))
+        `when`(playerRepository.findAllById(listOf(1L, 2L))).thenReturn(players)
+
+        val result = service.balance(BalanceRequest("rating", playerIds = listOf(1, 2)))
+
+        assertEquals(listOf(2L), result.rebels)
+        assertEquals(listOf(1L), result.imperials)
+    }
+
+    @Test
+    fun `balance rejects unknown player ids and requests with both or neither id list`() {
+        `when`(playerRepository.findAllById(listOf(1L, 9L))).thenReturn(listOf(player(1, 101, 90)))
+
+        assertThrows<IllegalArgumentException> { service.balance(BalanceRequest("rating", playerIds = listOf(1, 9))) }
+        assertThrows<IllegalArgumentException> { service.balance(BalanceRequest("rating", listOf(101, 102), listOf(1, 2))) }
+        assertThrows<IllegalArgumentException> { service.balance(BalanceRequest("rating")) }
     }
 
     @Test

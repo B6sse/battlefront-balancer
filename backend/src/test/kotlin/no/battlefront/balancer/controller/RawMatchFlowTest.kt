@@ -165,6 +165,26 @@ class RawMatchFlowTest {
     }
 
     @Test
+    fun `dry run returns the result without storing anything`() {
+        val body = """{"map":"Dune Sea","rebelScore":5,"imperialScore":2,"players":${playersJson("playerId")}}"""
+        mvc
+            .perform(
+                post("/api/matches/raw")
+                    .param("dryRun", "true")
+                    .with(user(AppUserDetails(editor)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body),
+            ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.matchId").doesNotExist())
+            .andExpect(jsonPath("$.nextMap").doesNotExist())
+            .andExpectChanges("rebels", 24, 20, 17, 14)
+
+        assertEquals(0, rankedMatchRepository.count())
+        assertEquals(0, randomizerRepository.count())
+        assertEquals(1100, rankedPlayerStatRepository.findByPlayerIdAndSeason(players[0].id, 1)!!.br)
+    }
+
+    @Test
     fun `editor can upload on the website using player ids`() {
         upload("""{"map":"Dune Sea","rule":"DSE","rebelScore":3,"imperialScore":3,"players":${playersJson("playerId")}}""", asHost = false)
             .andExpect(status().isOk)

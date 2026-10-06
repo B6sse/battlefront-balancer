@@ -39,18 +39,19 @@ data class RawMatchPlayer(
 /**
  * Response for POST /api/matches/raw: what was stored, so Auric can log it.
  *
- * @param nextMap next suggested map from the randomizer
- * @param nextRule next suggested rule from the randomizer
+ * @param matchId id of the stored match; null for a dry run
+ * @param nextMap next suggested map from the randomizer; null for a dry run
+ * @param nextRule next suggested rule from the randomizer; null for a dry run
  */
 data class RawMatchResultDto(
-    val matchId: Long,
+    val matchId: Long?,
     val map: String,
     val rule: String,
     val mvpPlayerId: Long?,
     val rebels: List<RawMatchPlayerResultDto>,
     val imperials: List<RawMatchPlayerResultDto>,
-    val nextMap: String,
-    val nextRule: String,
+    val nextMap: String?,
+    val nextRule: String?,
 )
 
 data class RawMatchPlayerResultDto(

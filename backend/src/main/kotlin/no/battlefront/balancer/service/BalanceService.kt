@@ -23,28 +23,33 @@ class BalanceService(
     private val currentSeasonRepository: CurrentSeasonRepository,
 ) {
     /**
-     * Balances the players in [request]. The first team becomes the Rebels.
+     * Balances the players in [request], given either as persona IDs (Auric) or player IDs (website). The teams are
+     * returned with the same kind of ID. The first team becomes the Rebels.
      *
-     * @throws IllegalArgumentException on an invalid rating key, duplicate IDs, an odd or out-of-range player count,
-     *   or (for "br") players without stats in the current season.
+     * @throws IllegalArgumentException on an invalid rating key, both or neither ID list, duplicate IDs, an odd or
+     *   out-of-range player count, unknown player IDs, or (for "br") players without stats in the current season.
      * @throws UnknownPlayersException if any persona ID belongs to no player.
      */
     fun balance(request: BalanceRequest): BalanceResponse {
-        val ids = request.personaIds
         require(request.ratingKey in RATING_KEYS) { "ratingKey must be one of ${RATING_KEYS.joinToString()}" }
-        require(ids.size == ids.toSet().size) { "Duplicate persona IDs" }
+        require(request.personaIds.isEmpty() != request.playerIds.isEmpty()) { "Send either personaIds or playerIds" }
+        val byPersona = request.personaIds.isNotEmpty()
+        val ids = if (byPersona) request.personaIds else request.playerIds
+        require(ids.size == ids.toSet().size) { "Duplicate IDs" }
         require(ids.size in MIN_PLAYERS..MAX_PLAYERS) { "Between $MIN_PLAYERS and $MAX_PLAYERS players are required" }
         require(ids.size % 2 == 0) { "An even number of players is required" }
 
-        val players = playerRepository.findByPersonaIdIn(ids)
-        val known = players.mapNotNull { it.personaId }.toSet()
+        val players = if (byPersona) playerRepository.findByPersonaIdIn(ids) else playerRepository.findAllById(ids)
+        val idOf: (Player) -> Long = if (byPersona) { p -> checkNotNull(p.personaId) } else { p -> p.id }
+        val known = players.map(idOf).toSet()
         val unknown = ids.filter { it !in known }
-        if (unknown.isNotEmpty()) throw UnknownPlayersException(unknown)
+        if (byPersona && unknown.isNotEmpty()) throw UnknownPlayersException(unknown)
+        require(unknown.isEmpty()) { "Unknown player ids: ${unknown.joinToString()}" }
 
-        val (rebels, imperials) = splitTeams(toCandidates(players, request.ratingKey))
+        val (rebels, imperials) = splitTeams(toCandidates(players, request.ratingKey, idOf))
         return BalanceResponse(
-            rebels = rebels.map { it.personaId },
-            imperials = imperials.map { it.personaId },
+            rebels = rebels.map { it.id },
+            imperials = imperials.map { it.id },
             rebelAverage = rebels.map { it.rating }.average(),
             imperialAverage = imperials.map { it.rating }.average(),
         )
@@ -53,6 +58,7 @@ class BalanceService(
     private fun toCandidates(
         players: List<Player>,
         ratingKey: String,
+        idOf: (Player) -> Long,
     ): List<Candidate> {
         val ratingOf: (Player) -> Int =
             when (ratingKey) {
@@ -69,11 +75,12 @@ class BalanceService(
                     ({ p -> brByPlayer.getValue(p.id) })
                 }
             }
-        return players.map { p -> Candidate(checkNotNull(p.personaId), p.nickname, ratingOf(p)) }
+        return players.map { p -> Candidate(idOf(p), p.nickname, ratingOf(p)) }
     }
 
+    /** A player to place; [id] is the persona ID or player ID, whichever the request used. */
     internal data class Candidate(
-        val personaId: Long,
+        val id: Long,
         val nickname: String,
         val rating: Int,
     )

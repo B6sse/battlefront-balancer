@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -19,15 +20,19 @@ class RawMatchController(
      * Stores a match from raw results; the server computes BR, perf and MVP. Used by Auric (host token) after every
      * map, and by supervisors, editors and admins.
      *
+     * With `?dryRun=true` the result is computed and returned without storing anything (used by the website to show
+     * the BR changes before submitting).
+     *
      * @return 200 with the stored per-player changes, 400 on invalid input, or 422 with `unknown` if any persona ID
      *   is not registered (nothing is stored).
      */
     @PostMapping("/matches/raw")
     fun submit(
         @RequestBody request: RawMatchRequest,
+        @RequestParam(defaultValue = "false") dryRun: Boolean,
     ): ResponseEntity<Any> =
         try {
-            ResponseEntity.ok(rawMatchService.submit(request))
+            ResponseEntity.ok(rawMatchService.submit(request, dryRun))
         } catch (e: UnknownPlayersException) {
             ResponseEntity
                 .status(HttpStatus.UNPROCESSABLE_CONTENT)
