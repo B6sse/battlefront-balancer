@@ -84,6 +84,9 @@ class SecurityConfig {
                 }
             }.authorizeHttpRequests { auth ->
                 auth
+                    // Spring forwards errors (e.g. malformed JSON → 400) to /error; without this they surface as 401.
+                    .requestMatchers("/error")
+                    .permitAll()
                     .requestMatchers(
                         HttpMethod.GET,
                         "/api/health",
