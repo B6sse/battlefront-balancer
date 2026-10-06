@@ -10,11 +10,15 @@ import org.springframework.stereotype.Service
 @Service
 class CurrentUserService {
     /**
-     * Returns the current user's id, or null if not authenticated.
+     * Returns the current user's id, or null if not authenticated. For a request made with a host token this is
+     * the token owner's id, so matches uploaded by Auric get the owner as supervisor.
      */
     fun currentUserId(): Long? {
         val auth = SecurityContextHolder.getContext().authentication ?: return null
-        val principal = auth.principal as? AppUserDetails ?: return null
-        return principal.userId
+        return when (val principal = auth.principal) {
+            is AppUserDetails -> principal.userId
+            is HostPrincipal -> principal.userId
+            else -> null
+        }
     }
 }

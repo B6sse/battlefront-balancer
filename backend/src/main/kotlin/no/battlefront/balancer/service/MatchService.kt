@@ -19,6 +19,7 @@ import no.battlefront.balancer.security.CurrentUserService
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
@@ -147,6 +148,30 @@ class MatchService(
         val rebelScore = (request.matchData[3] as Number).toInt()
         val imperialScore = (request.matchData[4] as Number).toInt()
         val rule = request.matchData[5].toString()
+
+        recordMatch(map, rule, teamSize, rebelScore, imperialScore, mvpId, supervisorId, request.rebels + request.imperials)
+        return randomizerService.pickAndSave()
+    }
+
+    /**
+     * Saves a rated match in the current season: the [RankedMatch], one [RankedMatchStat] per player, and the
+     * players' [RankedPlayerStat][no.battlefront.balancer.model.RankedPlayerStat] (BR, best, results, score, MVP).
+     *
+     * @param date when the match was played; defaults to now
+     * @throws IllegalStateException if a player has no stats in the current season.
+     */
+    @Transactional
+    fun recordMatch(
+        map: String,
+        rule: String,
+        teamSize: Int,
+        rebelScore: Int,
+        imperialScore: Int,
+        mvpId: Long?,
+        supervisorId: Long,
+        allPlayers: List<PlayerMatchStatDto>,
+        date: LocalDateTime = LocalDateTime.now(),
+    ): RankedMatch {
         val season = currentSeasonRepository.findCurrentSeason() ?: 1
 
         val match =
@@ -159,11 +184,11 @@ class MatchService(
                 imperialScore = imperialScore,
                 mvpId = mvpId,
                 supervisorId = supervisorId,
+                date = date,
             )
         val savedMatch = rankedMatchRepository.save(match)
         val matchId = savedMatch.id
 
-        val allPlayers: List<PlayerMatchStatDto> = request.rebels + request.imperials
         for (p in allPlayers) {
             val mvp = if (mvpId == p.id) 1 else 0
             rankedMatchStatRepository.save(
@@ -202,7 +227,7 @@ class MatchService(
             pstat.mvp += mvp
             rankedPlayerStatRepository.save(pstat)
         }
-        return randomizerService.pickAndSave()
+        return savedMatch
     }
 
     /**

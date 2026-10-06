@@ -12,13 +12,6 @@ import java.util.Locale
 import kotlin.math.abs
 
 /**
- * Thrown when a request refers to persona IDs that belong to no registered player.
- */
-class UnknownPlayersException(
-    val unknown: List<Long>,
-) : RuntimeException("Unknown persona IDs: ${unknown.joinToString()}")
-
-/**
  * Splits a lobby into two teams with ratings as even as possible.
  *
  * The algorithm is ported from `generateCombinations` in the frontend's RankedPage and InternPage.
