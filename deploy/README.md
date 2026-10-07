@@ -36,7 +36,7 @@ ssh root@<IP>
 apt update && apt upgrade -y
 curl -fsSL https://get.docker.com | sh
 
-git clone -b 4-add-website-pages https://github.com/B6sse/battlefront-balancer.git
+git clone https://github.com/B6sse/battlefront-balancer.git
 cd battlefront-balancer
 ```
 
