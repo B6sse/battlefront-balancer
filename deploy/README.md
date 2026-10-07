@@ -14,8 +14,8 @@ dashes, e.g. `65-21-10-4.sslip.io`. To move to a real domain later, point the do
 
 ## 1. Create the server
 
-1. Create an account at [Hetzner Cloud](https://console.hetzner.cloud) and a project.
-2. Add your SSH public key (Project → Security → SSH keys). On a Mac: `cat ~/.ssh/id_ed25519.pub`, or create one
+1. Create an account at [Hetzner Cloud](https://console.hetzner.com) and a project.
+2. Add your SSH public key (Project → Security → SSH keys). On a Mac: `pbcopy < ~/.ssh/id_ed25519.pub` (or `id_rsa.pub`) copies it; if you have none, create one
    with `ssh-keygen -t ed25519`.
 3. Create a server:
    - **Location:** Falkenstein, Nuremberg or Helsinki
