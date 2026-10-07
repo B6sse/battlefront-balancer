@@ -1360,6 +1360,9 @@ body[data-menu] .btn--menu {
 @media (min-width: 768px) { .btn--partner { grid-column: 1 / 7; } .gamemode { grid-column: 7 / 12; } .settings { grid-column: 1 / 6; } .player { grid-column: 1 / 6; } .player__play { min-height: 445.2px; } .team__match { grid-column: 7 / 12; margin-top: 42px; } .team__gamemode { grid-row: 2 / 3; grid-column: 7 / 12; } }
 @media (min-width: 1440px) { .gamemode { grid-column: 7 / 11; } .settings { grid-column: 1 / 6; } .player { grid-column: 7 / 10; } .player__play { min-height: 463.63px; } .team__match { grid-column: 8 / 16; } .team__gamemode { grid-column: 10 / 16; } }
 @media (min-width: 1600px) { .settings__console { display: grid; grid-template-columns: repeat(2, auto); gap: 40px; } }
+/* Ranked/intern: the left column (image, player list, controls) spans columns 1–5. Give those columns 2/3 of the
+   normal width so the left column is about 25% narrower and the selected players and teams get the space. */
+@media (min-width: 1440px) { .section--balance .container { grid-template-columns: repeat(5, minmax(0, 4fr)) repeat(10, minmax(0, 5fr)); } }
 
 /* Rating badges (FIFA-style) */
 .rating-badge {
