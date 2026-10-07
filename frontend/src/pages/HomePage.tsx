@@ -316,7 +316,7 @@ export function HomePage() {
                     {loading ? (
                       <tr>
                         <td colSpan={viewMode === 'intern' ? 4 : 6} className="table__cell">
-                          Laster…
+                          Loading...
                         </td>
                       </tr>
                     ) : playersError ? (
@@ -328,7 +328,7 @@ export function HomePage() {
                     ) : filteredPlayers.length === 0 ? (
                       <tr>
                         <td colSpan={viewMode === 'intern' ? 4 : 6} className="table__cell">
-                          Ingen spillere. Legg til spillere i databasen eller sjekk at API returnerer data.
+                          No players found
                         </td>
                       </tr>
                     ) : (
