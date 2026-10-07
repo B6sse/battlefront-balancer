@@ -41,6 +41,9 @@ bin/
 ### Mac OS ###
 .DS_Store
 
+### Compose (SITE_ADDRESS for production) ###
+/.env
+
 ### Backend ###
 backend/.env
 backend/.env.local

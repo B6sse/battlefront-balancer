@@ -11,6 +11,8 @@ A web app for making Star Wars Battlefront 2015 more competitive with ranked pla
 
 ## Getting started
 
+Configuration comes from `backend/.env` (git-ignored). Start from the template: `cp backend/.env.example backend/.env`.
+
 ### Development (backend and frontend on host)
 
 1. **Start Postgres only**
@@ -41,6 +43,11 @@ docker compose up -d
 - Postgres: localhost:5432 (user `battlefront`, password `battlefront`, database `battlefront_balancer`)
 
 Stop: `docker compose down`.
+
+### Production
+
+See [deploy/README.md](deploy/README.md): Docker Compose on a VPS with Caddy for HTTPS
+(`docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build`).
 
 ### Database schema and seed data
 

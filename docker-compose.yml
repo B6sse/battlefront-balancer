@@ -1,10 +1,12 @@
+# Local full stack. Postgres and the backend are bound to localhost only, so Docker does not expose them
+# past the firewall. For production use docker-compose.prod.yml on top of this file (see deploy/README.md).
 services:
   postgres:
     image: postgres:16-alpine
     env_file:
       - backend/.env
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,7 +24,7 @@ services:
     environment:
       POSTGRES_HOST: postgres
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
