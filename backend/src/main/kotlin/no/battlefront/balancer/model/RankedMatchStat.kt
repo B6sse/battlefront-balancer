@@ -40,4 +40,8 @@ class RankedMatchStat(
     var updateBr: Int = 0,
     @Column(name = "new_br", nullable = false)
     var newBr: Int = 0,
+    @Column(nullable = true)
+    var kills: Int? = null,
+    @Column(nullable = true)
+    var deaths: Int? = null,
 )

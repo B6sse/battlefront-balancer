@@ -1,12 +1,12 @@
 package no.battlefront.balancer.dto
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.KotlinModule
 
 @Tag("Dto")
 class PlayerMatchStatDtoTest {
@@ -33,7 +33,7 @@ class PlayerMatchStatDtoTest {
         assertEquals(900, dto.newBR)
 
         // Jackson usage coverage: ensure @JsonProperty("NewBR") is honoured
-        val mapper = ObjectMapper().registerModule(KotlinModule.Builder().build())
+        val mapper = JsonMapper.builder().addModule(KotlinModule.Builder().build()).build()
         val json = mapper.writeValueAsString(dto)
 
         assertTrue(json.contains("\"NewBR\""))

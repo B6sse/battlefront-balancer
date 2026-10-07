@@ -6,6 +6,8 @@ import no.battlefront.balancer.model.Player
 import no.battlefront.balancer.model.RankedPlayerStat
 import no.battlefront.balancer.repository.CurrentSeasonRepository
 import no.battlefront.balancer.repository.PlayerRepository
+import no.battlefront.balancer.repository.RankedMatchRepository
+import no.battlefront.balancer.repository.RankedMatchStatRepository
 import no.battlefront.balancer.repository.RankedPlayerStatRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Tag
@@ -27,7 +29,16 @@ class PlayerServiceTest {
     private val rankedPlayerStatRepository: RankedPlayerStatRepository =
         mock(RankedPlayerStatRepository::class.java)
     private val currentSeasonRepository: CurrentSeasonRepository = mock(CurrentSeasonRepository::class.java)
-    private val service = PlayerService(playerRepository, rankedPlayerStatRepository, currentSeasonRepository)
+    private val rankedMatchRepository: RankedMatchRepository = mock(RankedMatchRepository::class.java)
+    private val rankedMatchStatRepository: RankedMatchStatRepository = mock(RankedMatchStatRepository::class.java)
+    private val service =
+        PlayerService(
+            playerRepository,
+            rankedPlayerStatRepository,
+            currentSeasonRepository,
+            rankedMatchRepository,
+            rankedMatchStatRepository,
+        )
 
     /**
      * Test that getPlayersWithCurrentSeasonStats returns an empty list when there are no stats for the current season.
@@ -58,7 +69,6 @@ class PlayerServiceTest {
                 nation = "no",
                 rating = 50,
                 dzrating = 50,
-                elo = 10,
             )
         val p2 =
             Player(
@@ -67,7 +77,6 @@ class PlayerServiceTest {
                 nation = "us",
                 rating = 70,
                 dzrating = 70,
-                elo = 20,
             )
         `when`(playerRepository.findAll()).thenReturn(listOf(p1, p2))
 
@@ -95,7 +104,7 @@ class PlayerServiceTest {
     @Test
     fun `getPlayersWithCurrentSeasonStats returns players with stats when data exists`() {
         `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
-        val player = Player(id = 10L, nickname = "Test", nation = "no", rating = 80, dzrating = 80, elo = 900)
+        val player = Player(id = 10L, nickname = "Test", nation = "no", rating = 80, dzrating = 80)
         val stat =
             RankedPlayerStat(
                 id = 1L,
@@ -111,7 +120,7 @@ class PlayerServiceTest {
                 mvp = 1,
             )
         `when`(rankedPlayerStatRepository.findBySeason(1)).thenReturn(listOf(stat))
-        `when`(playerRepository.findById(10L)).thenReturn(java.util.Optional.of(player))
+        `when`(playerRepository.findAllById(listOf(10L))).thenReturn(listOf(player))
 
         val result = service.getPlayersWithCurrentSeasonStats()
 
@@ -138,7 +147,6 @@ class PlayerServiceTest {
                 nation = "no",
                 rating = 65,
                 dzrating = 65,
-                elo = 0,
             )
         `when`(playerRepository.save(any(Player::class.java))).thenReturn(savedPlayer)
         `when`(rankedPlayerStatRepository.save(any(RankedPlayerStat::class.java))).thenAnswer { it.getArgument(0) }
@@ -254,7 +262,7 @@ class PlayerServiceTest {
      */
     @Test
     fun `updatePlayer succeeds and updates BR`() {
-        val player = Player(id = 2L, nickname = "Old", nation = "us", rating = 70, dzrating = 70, elo = 850)
+        val player = Player(id = 2L, nickname = "Old", nation = "us", rating = 70, dzrating = 70)
         val stats =
             RankedPlayerStat(
                 id = 1L,
@@ -291,8 +299,128 @@ class PlayerServiceTest {
     }
 
     @Test
+    fun `createPlayer stores persona ID`() {
+        `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
+        `when`(playerRepository.save(any(Player::class.java))).thenAnswer { it.getArgument(0) }
+        `when`(rankedPlayerStatRepository.save(any(RankedPlayerStat::class.java))).thenAnswer { it.getArgument(0) }
+
+        val result =
+            service.createPlayer(
+                PlayerCreateRequest(nickname = "P", nation = "no", rating = 70, personaId = 1004081841178L),
+            )
+
+        assertEquals(1004081841178L, result.personaId)
+    }
+
+    @Test
+    fun `createPlayer throws when persona ID is not positive`() {
+        assertThrows<IllegalArgumentException> {
+            service.createPlayer(PlayerCreateRequest(nickname = "P", nation = "no", rating = 70, personaId = 0L))
+        }
+    }
+
+    @Test
+    fun `createPlayer throws when persona ID is used by another player`() {
+        val owner = Player(id = 5L, nickname = "Owner", nation = "no", rating = 70, dzrating = 70, personaId = 42L)
+        `when`(playerRepository.findByPersonaId(42L)).thenReturn(owner)
+
+        val ex =
+            assertThrows<IllegalArgumentException> {
+                service.createPlayer(PlayerCreateRequest(nickname = "P", nation = "no", rating = 70, personaId = 42L))
+            }
+        assertEquals("Persona ID is already used by Owner", ex.message)
+    }
+
+    @Test
+    fun `updatePlayer keeps own persona ID and leaves last seen name untouched`() {
+        val player =
+            Player(
+                id = 2L,
+                nickname = "Old",
+                nation = "us",
+                rating = 70,
+                dzrating = 70,
+                personaId = 42L,
+                lastSeenName = "InGame",
+            )
+        val stats = RankedPlayerStat(id = 1L, playerId = 2L, season = 1, br = 850, best = 900)
+        `when`(playerRepository.findById(2L)).thenReturn(java.util.Optional.of(player))
+        `when`(playerRepository.findByPersonaId(42L)).thenReturn(player)
+        `when`(playerRepository.save(any(Player::class.java))).thenAnswer { it.getArgument(0) }
+        `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
+        `when`(rankedPlayerStatRepository.findByPlayerIdAndSeason(2L, 1)).thenReturn(stats)
+
+        val result =
+            service.updatePlayer(
+                2L,
+                PlayerUpdateRequest(nickname = "Old", nation = "us", rating = 70, dzrating = 70, br = 850, personaId = 42L),
+            )
+
+        assertEquals(42L, result.personaId)
+        assertEquals("Old", result.nickname)
+        assertEquals("InGame", result.lastSeenName)
+    }
+
+    @Test
+    fun `updatePlayer throws when persona ID is used by another player`() {
+        val player = Player(id = 2L, nickname = "Old", nation = "us", rating = 70, dzrating = 70)
+        val owner = Player(id = 5L, nickname = "Owner", nation = "no", rating = 70, dzrating = 70, personaId = 42L)
+        `when`(playerRepository.findById(2L)).thenReturn(java.util.Optional.of(player))
+        `when`(playerRepository.findByPersonaId(42L)).thenReturn(owner)
+
+        assertThrows<IllegalArgumentException> {
+            service.updatePlayer(
+                2L,
+                PlayerUpdateRequest(nickname = "Old", nation = "us", rating = 70, dzrating = 70, br = 850, personaId = 42L),
+            )
+        }
+    }
+
+    @Test
+    fun `getPlayersByPersonaIds returns players in request order and lists unknown IDs`() {
+        val a = Player(id = 1L, nickname = "A", nation = "no", rating = 80, dzrating = 80, personaId = 101L)
+        val b = Player(id = 2L, nickname = "B", nation = "se", rating = 70, dzrating = 70, personaId = 102L)
+        `when`(playerRepository.findByPersonaIdIn(listOf(102L, 999L, 101L))).thenReturn(listOf(a, b))
+        `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(2)
+        `when`(rankedPlayerStatRepository.findBySeasonAndPlayerIdIn(2, listOf(1L, 2L)))
+            .thenReturn(listOf(RankedPlayerStat(playerId = 2L, season = 2, br = 1111)))
+
+        val result = service.getPlayersByPersonaIds(listOf(102L, 999L, 101L, 102L))
+
+        assertEquals(listOf("B", "A"), result.players.map { it.nickname })
+        assertEquals(1111, result.players[0].br)
+        assertEquals(0, result.players[1].br)
+        assertEquals(listOf(999L), result.unknown)
+    }
+
+    @Test
+    fun `getPlayersByPersonaIds handles empty and too long lists`() {
+        assertEquals(0, service.getPlayersByPersonaIds(emptyList()).players.size)
+        assertThrows<IllegalArgumentException> { service.getPlayersByPersonaIds((1L..65L).toList()) }
+    }
+
+    @Test
+    fun `player DTOs include persona ID and last seen name`() {
+        `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)
+        val player =
+            Player(id = 10L, nickname = "Test", nation = "no", rating = 80, dzrating = 80, personaId = 7L, lastSeenName = "T")
+        `when`(rankedPlayerStatRepository.findBySeason(1))
+            .thenReturn(listOf(RankedPlayerStat(id = 1L, playerId = 10L, season = 1)))
+        `when`(playerRepository.findAllById(listOf(10L))).thenReturn(listOf(player))
+        `when`(playerRepository.findAll()).thenReturn(listOf(player))
+
+        val seasonDto = service.getPlayersWithCurrentSeasonStats().single()
+        val internDto = service.getAllPlayersForInternView().single()
+
+        assertEquals(7L, seasonDto.personaId)
+        assertEquals("T", seasonDto.lastSeenName)
+        assertEquals(7L, internDto.personaId)
+        assertEquals("T", internDto.lastSeenName)
+    }
+
+    @Test
     fun `updatePlayer throws when season stats are missing`() {
-        val player = Player(id = 2L, nickname = "Old", nation = "us", rating = 70, dzrating = 70, elo = 850)
+        val player = Player(id = 2L, nickname = "Old", nation = "us", rating = 70, dzrating = 70)
         `when`(playerRepository.findById(2L)).thenReturn(java.util.Optional.of(player))
         `when`(playerRepository.save(any(Player::class.java))).thenAnswer { it.getArgument(0) }
         `when`(currentSeasonRepository.findCurrentSeason()).thenReturn(1)

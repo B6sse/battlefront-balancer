@@ -1,6 +1,7 @@
 package no.battlefront.balancer.controller
 
 import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import no.battlefront.balancer.dto.LastMatchPlayerDto
 import no.battlefront.balancer.dto.LoginRequest
 import no.battlefront.balancer.dto.MatchSubmitRequest
@@ -9,6 +10,8 @@ import no.battlefront.balancer.dto.PlayerUpdateRequest
 import no.battlefront.balancer.dto.PlayerWithStatsDto
 import no.battlefront.balancer.dto.RandomizerDto
 import no.battlefront.balancer.dto.RandomizerSubmitRequest
+import no.battlefront.balancer.dto.UpdateUserRoleRequest
+import no.battlefront.balancer.dto.UserDto
 import no.battlefront.balancer.model.Player
 import no.battlefront.balancer.model.Randomizer
 import no.battlefront.balancer.model.User
@@ -16,6 +19,7 @@ import no.battlefront.balancer.security.AppUserDetails
 import no.battlefront.balancer.service.MatchService
 import no.battlefront.balancer.service.PlayerService
 import no.battlefront.balancer.service.RandomizerService
+import no.battlefront.balancer.service.UserService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
@@ -64,10 +68,11 @@ class ControllerTest {
         `when`(authenticationManager.authenticate(any(Authentication::class.java))).thenReturn(auth)
 
         val httpRequest = mock(HttpServletRequest::class.java)
+        val httpResponse = mock(HttpServletResponse::class.java)
         val loginSession = mock<jakarta.servlet.http.HttpSession>()
         `when`(httpRequest.getSession(true)).thenReturn(loginSession)
 
-        val response = controller.login(LoginRequest(username = "admin", password = "pw"), httpRequest)
+        val response = controller.login(LoginRequest(username = "admin", password = "pw"), httpRequest, httpResponse)
         assertEquals(HttpStatus.OK, response.statusCode)
 
         val body = requireNotNull(response.body) as no.battlefront.balancer.dto.CurrentUserDto
@@ -88,9 +93,10 @@ class ControllerTest {
         )
 
         val httpRequest = mock(HttpServletRequest::class.java)
+        val httpResponse = mock(HttpServletResponse::class.java)
 
         assertThrows<BadCredentialsException> {
-            controller.login(LoginRequest(username = "x", password = "y"), httpRequest)
+            controller.login(LoginRequest(username = "x", password = "y"), httpRequest, httpResponse)
         }
 
         assertNull(SecurityContextHolder.getContext().authentication)
@@ -154,7 +160,6 @@ class ControllerTest {
                     nation = "no",
                     rating = 80,
                     dzrating = 75,
-                    elo = 100,
                     br = 90,
                     played = 1,
                     best = 95,
@@ -166,9 +171,9 @@ class ControllerTest {
                 ),
             )
 
-        `when`(playerService.getPlayersWithCurrentSeasonStats()).thenReturn(players)
+        `when`(playerService.getPlayersWithSeasonStats(null)).thenReturn(players)
 
-        val response = controller.getPlayers()
+        val response = controller.getPlayers(null, null)
         assertEquals(HttpStatus.OK, response.statusCode)
         val body = requireNotNull(response.body)
         assertEquals(1, body.size)
@@ -181,7 +186,7 @@ class ControllerTest {
         val controller = PlayerController(playerService)
 
         val request = PlayerCreateRequest(nickname = "New", nation = "no", rating = 50)
-        val saved = Player(id = 10L, nickname = "New", nation = "no", rating = 50, dzrating = 50, elo = 900)
+        val saved = Player(id = 10L, nickname = "New", nation = "no", rating = 50, dzrating = 50)
 
         `when`(playerService.createPlayer(request)).thenReturn(saved)
 
@@ -212,7 +217,7 @@ class ControllerTest {
         val controller = PlayerController(playerService)
 
         val request = PlayerUpdateRequest(nickname = "N", nation = "no", rating = 70, dzrating = 70, br = 800)
-        val saved = Player(id = 2L, nickname = "N", nation = "no", rating = 70, dzrating = 70, elo = 900)
+        val saved = Player(id = 2L, nickname = "N", nation = "no", rating = 70, dzrating = 70)
 
         `when`(playerService.updatePlayer(2L, request)).thenReturn(saved)
 
@@ -303,14 +308,18 @@ class ControllerTest {
             )
 
         org.mockito.Mockito
-            .doNothing()
-            .`when`(matchService)
-            .submitMatch(req)
+            .`when`(matchService.submitMatch(req))
+            .thenReturn(
+                no.battlefront.balancer.dto
+                    .RandomizerDto(map = "Dune Sea", rule = "DSE"),
+            )
 
         val response = controller.submitMatch(req)
         assertEquals(HttpStatus.OK, response.statusCode)
         val body = requireNotNull(response.body)
         assertEquals(true, body["success"])
+        assertEquals("Dune Sea", body["nextMap"])
+        assertEquals("DSE", body["nextRule"])
     }
 
     @Test
@@ -400,5 +409,91 @@ class ControllerTest {
         val body = requireNotNull(response.body)
         assertEquals(false, body["success"])
         assertEquals("Error saving randomizer", body["message"])
+    }
+
+    @Test
+    fun `UserController listUsers returns list`() {
+        val userService = mock(UserService::class.java)
+        val controller = UserController(userService)
+
+        val users =
+            listOf(
+                UserDto(id = 1L, username = "alice", role = "admin"),
+                UserDto(id = 2L, username = "bob", role = "editor"),
+            )
+        `when`(userService.listUsers()).thenReturn(users)
+
+        val response = controller.listUsers()
+        assertEquals(HttpStatus.OK, response.statusCode)
+        val body = requireNotNull(response.body)
+        assertEquals(2, body.size)
+        assertEquals("alice", body[0].username)
+        assertEquals("admin", body[0].role)
+    }
+
+    @Test
+    fun `UserController updateUserRole returns updated user`() {
+        val userService = mock(UserService::class.java)
+        val controller = UserController(userService)
+
+        val callerUser = User(id = 1L, username = "alice", password = "pw", role = "admin")
+        val principal = AppUserDetails(callerUser)
+        val updated = UserDto(id = 2L, username = "bob", role = "supervisor")
+        `when`(userService.updateUserRole(2L, "supervisor", 1L)).thenReturn(updated)
+
+        val response = controller.updateUserRole(2L, UpdateUserRoleRequest(role = "supervisor"), principal)
+        assertEquals(HttpStatus.OK, response.statusCode)
+        val body = requireNotNull(response.body) as UserDto
+        assertEquals("bob", body.username)
+        assertEquals("supervisor", body.role)
+    }
+
+    @Test
+    fun `UserController updateUserRole returns 400 on IllegalArgumentException`() {
+        val userService = mock(UserService::class.java)
+        val controller = UserController(userService)
+
+        val callerUser = User(id = 1L, username = "alice", password = "pw", role = "admin")
+        val principal = AppUserDetails(callerUser)
+        `when`(userService.updateUserRole(1L, "editor", 1L))
+            .thenThrow(IllegalArgumentException("Cannot change your own role"))
+
+        val response = controller.updateUserRole(1L, UpdateUserRoleRequest(role = "editor"), principal)
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        val body = requireNotNull(response.body) as Map<*, *>
+        assertEquals("Cannot change your own role", body["message"])
+    }
+
+    @Test
+    fun `UserController deleteUser returns 204 and calls service`() {
+        val userService = mock(UserService::class.java)
+        val controller = UserController(userService)
+
+        val callerUser = User(id = 1L, username = "alice", password = "pw", role = "admin")
+        val principal = AppUserDetails(callerUser)
+
+        val response = controller.deleteUser(2L, principal)
+        assertEquals(HttpStatus.NO_CONTENT, response.statusCode)
+        org.mockito.Mockito
+            .verify(userService)
+            .deleteUser(2L, 1L)
+    }
+
+    @Test
+    fun `UserController deleteUser returns 400 on IllegalArgumentException`() {
+        val userService = mock(UserService::class.java)
+        val controller = UserController(userService)
+
+        val callerUser = User(id = 1L, username = "alice", password = "pw", role = "admin")
+        val principal = AppUserDetails(callerUser)
+        org.mockito.Mockito
+            .doThrow(IllegalArgumentException("Cannot delete an admin"))
+            .`when`(userService)
+            .deleteUser(3L, 1L)
+
+        val response = controller.deleteUser(3L, principal)
+        assertEquals(HttpStatus.BAD_REQUEST, response.statusCode)
+        val body = requireNotNull(response.body) as Map<*, *>
+        assertEquals("Cannot delete an admin", body["message"])
     }
 }

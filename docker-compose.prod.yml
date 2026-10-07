@@ -1,0 +1,36 @@
+# Production overrides: Caddy terminates HTTPS in front of the frontend; postgres, backend and frontend are not
+# reachable from outside. See deploy/README.md.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+services:
+  postgres:
+    ports: !reset []
+    restart: unless-stopped
+
+  backend:
+    ports: !reset []
+    restart: unless-stopped
+
+  frontend:
+    ports: !reset []
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?Set SITE_ADDRESS in the .env file next to docker-compose.yml}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
+volumes:
+  caddy_data:
+  caddy_config:

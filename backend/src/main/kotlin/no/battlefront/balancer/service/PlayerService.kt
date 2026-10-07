@@ -1,82 +1,134 @@
 package no.battlefront.balancer.service
 
 import no.battlefront.balancer.dto.PlayerCreateRequest
+import no.battlefront.balancer.dto.PlayerMatchHistoryDto
 import no.battlefront.balancer.dto.PlayerUpdateRequest
 import no.battlefront.balancer.dto.PlayerWithStatsDto
+import no.battlefront.balancer.dto.PlayersByPersonaDto
 import no.battlefront.balancer.model.Player
 import no.battlefront.balancer.model.RankedPlayerStat
 import no.battlefront.balancer.repository.CurrentSeasonRepository
 import no.battlefront.balancer.repository.PlayerRepository
+import no.battlefront.balancer.repository.RankedMatchRepository
+import no.battlefront.balancer.repository.RankedMatchStatRepository
 import no.battlefront.balancer.repository.RankedPlayerStatRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.format.DateTimeFormatter
 
 @Service
 class PlayerService(
     private val playerRepository: PlayerRepository,
     private val rankedPlayerStatRepository: RankedPlayerStatRepository,
     private val currentSeasonRepository: CurrentSeasonRepository,
+    private val rankedMatchRepository: RankedMatchRepository,
+    private val rankedMatchStatRepository: RankedMatchStatRepository,
 ) {
+    private val isoFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+
+    /**
+     * Returns players with stats for the given season parameter.
+     * - null/blank → current season
+     * - "all" → aggregate across all seasons
+     * - numeric string → that season
+     */
+    fun getPlayersWithSeasonStats(seasonParam: String?): List<PlayerWithStatsDto> =
+        when {
+            seasonParam == "all" -> getPlayersAllSeasons()
+            seasonParam != null && seasonParam.isNotBlank() -> {
+                val season = seasonParam.toIntOrNull() ?: return emptyList()
+                getPlayersForSeason(season)
+            }
+            else -> getPlayersWithCurrentSeasonStats()
+        }
+
     /**
      * Returns all players with their season statistics for the current season.
-     * If no stats exist for the current season (e.g. new DB or season mismatch),
-     * returns all players with zero/default stats so the list is never empty when players exist.
-     *
-     * @return list of [PlayerWithStatsDto]; never null, may be empty only if there are no players.
+     * Falls back to all players with zero stats when no stats exist for the current season.
      */
     fun getPlayersWithCurrentSeasonStats(): List<PlayerWithStatsDto> {
         val season = currentSeasonRepository.findCurrentSeason() ?: 1
         val stats = rankedPlayerStatRepository.findBySeason(season)
         if (stats.isNotEmpty()) {
+            val playerIds = stats.map { it.playerId }
+            val playerMap = playerRepository.findAllById(playerIds).associateBy { it.id }
             return stats
-                .map { stat ->
-                    val player = playerRepository.findById(stat.playerId).orElse(null) ?: return@map null
-                    PlayerWithStatsDto(
-                        id = player.id,
-                        nickname = player.nickname,
-                        nation = player.nation,
-                        rating = player.rating,
-                        dzrating = player.dzrating,
-                        elo = player.elo,
-                        br = stat.br,
-                        played = stat.played,
-                        best = stat.best,
-                        won = stat.won,
-                        lost = stat.lost,
-                        draw = stat.draw,
-                        score = stat.score,
-                        mvp = stat.mvp,
-                    )
-                }.filterNotNull()
+                .mapNotNull { stat ->
+                    val player = playerMap[stat.playerId] ?: return@mapNotNull null
+                    stat.toDto(player)
+                }.sortedWith(
+                    compareByDescending<PlayerWithStatsDto> { it.played >= 5 }
+                        .thenByDescending { it.br }
+                        .thenBy { it.nickname.lowercase() },
+                )
         }
-        // No stats for current season: return all players with zero stats so UI shows them
-        return playerRepository.findAll().map { player ->
-            PlayerWithStatsDto(
-                id = player.id,
-                nickname = player.nickname,
-                nation = player.nation,
-                rating = player.rating,
-                dzrating = player.dzrating,
-                elo = player.elo,
-                br = 0,
-                played = 0,
-                best = 0,
-                won = 0,
-                lost = 0,
-                draw = 0,
-                score = 0,
-                mvp = 0,
+        return playerRepository.findAll().map { it.toZeroStatsDto() }
+    }
+
+    fun getAllPlayersForInternView(): List<PlayerWithStatsDto> = playerRepository.findAll().map { it.toZeroStatsDto() }
+
+    /**
+     * Returns players with current-season stats for the given persona IDs (in request order, duplicates removed),
+     * plus the IDs that belong to no player. Players without stats this season get zero stats.
+     *
+     * @throws IllegalArgumentException if more than [MAX_PERSONA_LOOKUP] IDs are requested.
+     */
+    fun getPlayersByPersonaIds(personaIds: List<Long>): PlayersByPersonaDto {
+        val ids = personaIds.distinct()
+        require(ids.size <= MAX_PERSONA_LOOKUP) { "At most $MAX_PERSONA_LOOKUP persona IDs per request" }
+        if (ids.isEmpty()) return PlayersByPersonaDto(emptyList(), emptyList())
+
+        val byPersona = playerRepository.findByPersonaIdIn(ids).associateBy { it.personaId }
+        val season = currentSeasonRepository.findCurrentSeason() ?: 1
+        val stats =
+            rankedPlayerStatRepository
+                .findBySeasonAndPlayerIdIn(season, byPersona.values.map { it.id })
+                .associateBy { it.playerId }
+        val players = ids.mapNotNull { byPersona[it] }.map { p -> stats[p.id]?.toDto(p) ?: p.toZeroStatsDto() }
+        return PlayersByPersonaDto(players, ids.filter { it !in byPersona })
+    }
+
+    /**
+     * Returns the match history for a player, newest first.
+     * - null/blank → current season
+     * - "all" → all seasons
+     * - numeric string → that season
+     */
+    fun getPlayerMatchHistory(
+        playerId: Long,
+        seasonParam: String?,
+    ): List<PlayerMatchHistoryDto> {
+        val stats =
+            when {
+                seasonParam == "all" -> rankedMatchStatRepository.findByPlayerIdOrderByMatchIdDesc(playerId)
+                seasonParam != null && seasonParam.isNotBlank() -> {
+                    val season = seasonParam.toIntOrNull() ?: return emptyList()
+                    rankedMatchStatRepository.findByPlayerIdAndSeasonOrderByMatchIdDesc(playerId, season)
+                }
+                else -> {
+                    val season = currentSeasonRepository.findCurrentSeason() ?: 1
+                    rankedMatchStatRepository.findByPlayerIdAndSeasonOrderByMatchIdDesc(playerId, season)
+                }
+            }
+        if (stats.isEmpty()) return emptyList()
+        val matchMap = rankedMatchRepository.findAllById(stats.map { it.matchId }).associateBy { it.id }
+        return stats.mapNotNull { stat ->
+            val match = matchMap[stat.matchId] ?: return@mapNotNull null
+            PlayerMatchHistoryDto(
+                matchId = match.id,
+                date = match.date.format(isoFormatter),
+                map = match.map,
+                rule = match.rule,
+                result = stat.result,
+                score = stat.score,
+                updateBr = stat.updateBr,
+                newBr = stat.newBr,
             )
         }
     }
 
     /**
      * Creates a new player and initial [RankedPlayerStat] row for the current season.
-     * Initial BR/best are derived from rating buckets (e.g. rating 60 -> 750, 89 -> 1000).
-     *
-     * @param request nickname, nation (2-letter code), and rating (1–99).
-     * @return the persisted [Player].
-     * @throws IllegalArgumentException if nickname is empty, rating out of range, or nation not 2 letters.
      */
     @Transactional
     fun createPlayer(request: PlayerCreateRequest): Player {
@@ -87,9 +139,9 @@ class PlayerService(
         require(nickname.isNotEmpty()) { "Name is required" }
         require(rating in 1..99) { "Rating must be between 1 and 99" }
         require(nation.length == 2) { "Nation must be a 2-letter code" }
+        requireValidPersonaId(request.personaId, playerId = null)
 
         val dzrating = rating
-
         val br =
             when {
                 rating <= 60 -> 750
@@ -101,7 +153,6 @@ class PlayerService(
                 else -> 1050
             }
         val best = br
-
         val season = currentSeasonRepository.findCurrentSeason() ?: 1
 
         val player =
@@ -110,7 +161,7 @@ class PlayerService(
                 nation = nation,
                 rating = rating,
                 dzrating = dzrating,
-                elo = 0,
+                personaId = request.personaId,
             )
         val savedPlayer = playerRepository.save(player)
 
@@ -134,12 +185,6 @@ class PlayerService(
 
     /**
      * Updates an existing player's profile and their BR for the current season.
-     *
-     * @param id the player's primary key.
-     * @param request nickname, nation, rating, dzrating, and new br.
-     * @return the persisted [Player].
-     * @throws IllegalArgumentException if id not found or validation fails.
-     * @throws IllegalStateException if no season stats exist for this player and season.
      */
     @Transactional
     fun updatePlayer(
@@ -159,11 +204,13 @@ class PlayerService(
         require(dzrating in 1..99) { "DZ rating must be between 1 and 99" }
         require(br in 1..9999) { "BR must be between 1 and 9999" }
         require(nation.length == 2) { "Nation must be a 2-letter code" }
+        requireValidPersonaId(request.personaId, playerId = id)
 
         player.nickname = nickname
         player.nation = nation
         player.rating = rating
         player.dzrating = dzrating
+        player.personaId = request.personaId
         val savedPlayer = playerRepository.save(player)
 
         val season = currentSeasonRepository.findCurrentSeason() ?: 1
@@ -179,14 +226,123 @@ class PlayerService(
 
     /**
      * Deletes a player by id. Related [RankedPlayerStat] rows are removed by DB cascade.
-     *
-     * @param id the player's primary key. No-op if the player does not exist.
      */
     @Transactional
     fun deletePlayer(id: Long) {
-        if (!playerRepository.existsById(id)) {
-            return
-        }
+        if (!playerRepository.existsById(id)) return
         playerRepository.deleteById(id)
+    }
+
+    /**
+     * Checks that [personaId] is positive and not already used by a player other than [playerId].
+     */
+    private fun requireValidPersonaId(
+        personaId: Long?,
+        playerId: Long?,
+    ) {
+        if (personaId == null) return
+        require(personaId > 0) { "Persona ID must be a positive number" }
+        val owner = playerRepository.findByPersonaId(personaId)
+        require(owner == null || owner.id == playerId) { "Persona ID is already used by ${owner?.nickname}" }
+    }
+
+    private fun getPlayersForSeason(season: Int): List<PlayerWithStatsDto> {
+        val stats = rankedPlayerStatRepository.findBySeason(season)
+        if (stats.isEmpty()) return emptyList()
+        val playerMap = playerRepository.findAllById(stats.map { it.playerId }).associateBy { it.id }
+        return stats
+            .mapNotNull { stat ->
+                val player = playerMap[stat.playerId] ?: return@mapNotNull null
+                stat.toDto(player)
+            }.sortedWith(
+                compareByDescending<PlayerWithStatsDto> { it.played >= 5 }
+                    .thenByDescending { it.br }
+                    .thenBy { it.nickname.lowercase() },
+            )
+    }
+
+    private fun getPlayersAllSeasons(): List<PlayerWithStatsDto> {
+        val allStats = rankedPlayerStatRepository.findAll()
+        if (allStats.isEmpty()) return emptyList()
+        val playerMap = playerRepository.findAll().associateBy { it.id }
+        return allStats
+            .groupBy { it.playerId }
+            .mapNotNull { (playerId, stats) ->
+                val player = playerMap[playerId] ?: return@mapNotNull null
+                val latestSeason = stats.maxOf { it.season }
+                val latestBr = stats.first { it.season == latestSeason }.br
+                val pastStats = stats.filter { it.season != latestSeason }
+                val weightedAvgBr =
+                    if (pastStats.isEmpty()) {
+                        latestBr.toDouble()
+                    } else {
+                        val totalWeighted = pastStats.sumOf { it.br.toDouble() * it.played }
+                        val totalPlayed = pastStats.sumOf { it.played }
+                        if (totalPlayed == 0) latestBr.toDouble() else totalWeighted / totalPlayed
+                    }
+                PlayerWithStatsDto(
+                    id = player.id,
+                    nickname = player.nickname,
+                    nation = player.nation,
+                    rating = player.rating,
+                    dzrating = player.dzrating,
+                    br = latestBr,
+                    played = stats.sumOf { it.played },
+                    best = stats.maxOf { it.best },
+                    won = stats.sumOf { it.won },
+                    lost = stats.sumOf { it.lost },
+                    draw = stats.sumOf { it.draw },
+                    score = stats.sumOf { it.score },
+                    mvp = stats.sumOf { it.mvp },
+                    personaId = player.personaId,
+                    lastSeenName = player.lastSeenName,
+                ) to weightedAvgBr
+            }.sortedWith(
+                compareByDescending<Pair<PlayerWithStatsDto, Double>> { it.first.played >= 5 }
+                    .thenByDescending { it.second }
+                    .thenBy { it.first.nickname.lowercase() },
+            ).map { it.first }
+    }
+
+    private fun RankedPlayerStat.toDto(player: Player) =
+        PlayerWithStatsDto(
+            id = player.id,
+            nickname = player.nickname,
+            nation = player.nation,
+            rating = player.rating,
+            dzrating = player.dzrating,
+            br = br,
+            played = played,
+            best = best,
+            won = won,
+            lost = lost,
+            draw = draw,
+            score = score,
+            mvp = mvp,
+            personaId = player.personaId,
+            lastSeenName = player.lastSeenName,
+        )
+
+    private fun Player.toZeroStatsDto() =
+        PlayerWithStatsDto(
+            id = id,
+            nickname = nickname,
+            nation = nation,
+            rating = rating,
+            dzrating = dzrating,
+            br = 0,
+            played = 0,
+            best = 0,
+            won = 0,
+            lost = 0,
+            draw = 0,
+            score = 0,
+            mvp = 0,
+            personaId = personaId,
+            lastSeenName = lastSeenName,
+        )
+
+    private companion object {
+        const val MAX_PERSONA_LOOKUP = 64
     }
 }

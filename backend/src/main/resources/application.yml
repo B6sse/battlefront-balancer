@@ -6,6 +6,9 @@ spring:
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      keepalive-time: 30000
+      max-lifetime: 600000
   jpa:
     hibernate:
       ddl-auto: validate
@@ -15,6 +18,10 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
     open-in-view: false
+  flyway:
+    # Databases created from the old init.sql already have the V1 schema; mark them as V1 instead of failing.
+    baseline-on-migrate: true
+    baseline-version: 1
 
 server:
   port: ${SERVER_PORT:8080}

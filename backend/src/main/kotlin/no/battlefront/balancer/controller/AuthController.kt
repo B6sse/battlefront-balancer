@@ -1,6 +1,7 @@
 package no.battlefront.balancer.controller
 
 import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import no.battlefront.balancer.dto.CurrentUserDto
 import no.battlefront.balancer.dto.LoginRequest
 import no.battlefront.balancer.security.AppUserDetails
@@ -9,6 +10,7 @@ import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -31,13 +33,16 @@ class AuthController(
     fun login(
         @RequestBody request: LoginRequest,
         httpRequest: HttpServletRequest,
+        httpResponse: HttpServletResponse,
     ): ResponseEntity<Any> {
         val auth =
             authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken(request.username, request.password),
             )
-        SecurityContextHolder.getContext().authentication = auth
-        httpRequest.getSession(true)
+        val context = SecurityContextHolder.createEmptyContext()
+        context.authentication = auth
+        SecurityContextHolder.setContext(context)
+        HttpSessionSecurityContextRepository().saveContext(context, httpRequest, httpResponse)
         val details = auth.principal as AppUserDetails
         val role =
             details.authorities

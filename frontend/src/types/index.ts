@@ -1,17 +1,47 @@
 // Fellestypedefinisjoner for frontend
 
+export interface MatchSummary {
+  id: number
+  date: string
+  map: string
+  rule: string
+  teamSize: number
+  mvpName: string | null
+  supervisorName: string | null
+}
+
+export interface MatchPlayerStat {
+  nickname: string
+  nation: string
+  score: number
+  updateBr: number
+  newBr: number
+  perf: number
+  kills: number | null
+  deaths: number | null
+}
+
+export interface MatchDetail {
+  id: number
+  rebelScore: number
+  imperialScore: number
+  teamSize: number
+  rebels: MatchPlayerStat[]
+  imperials: MatchPlayerStat[]
+}
+
+
 export interface HealthStatus {
   status: string
 }
 
-/** Player with current-season stats (GET /api/players). Matches backend PlayerWithStatsDto. */
+/** Player with season stats (GET /api/players). Matches backend PlayerWithStatsDto. */
 export interface PlayerWithStats {
   id: number
   nickname: string
   nation: string
   rating: number
   dzrating: number
-  elo: number
   br: number
   played: number
   best: number
@@ -20,4 +50,18 @@ export interface PlayerWithStats {
   draw: number
   score: number
   mvp: number
+  personaId: number | null
+  lastSeenName: string | null
+}
+
+/** One entry in a player's match history (GET /api/players/{id}/matches). */
+export interface PlayerMatchHistoryEntry {
+  matchId: number
+  date: string
+  map: string
+  rule: string
+  result: 'Won' | 'Lost' | 'Draw'
+  score: number
+  updateBr: number
+  newBr: number
 }

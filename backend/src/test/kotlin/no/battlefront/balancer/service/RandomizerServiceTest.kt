@@ -3,6 +3,7 @@ package no.battlefront.balancer.service
 import no.battlefront.balancer.dto.RandomizerDto
 import no.battlefront.balancer.model.Randomizer
 import no.battlefront.balancer.repository.RandomizerRepository
+import no.battlefront.balancer.repository.RandomizerWeightRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -16,7 +17,8 @@ import org.mockito.Mockito.`when`
 @Tag("RandomizerService")
 class RandomizerServiceTest {
     private val randomizerRepository: RandomizerRepository = mock(RandomizerRepository::class.java)
-    private val service = RandomizerService(randomizerRepository)
+    private val weightRepository: RandomizerWeightRepository = mock(RandomizerWeightRepository::class.java)
+    private val service = RandomizerService(randomizerRepository, weightRepository)
 
     /**
      * Test that getLatest returns the default map and rule when the repository is empty.

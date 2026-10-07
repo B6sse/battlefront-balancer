@@ -1,7 +1,10 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { getPlayers } from '../api/players'
+import { usePageTitle } from '../hooks/usePageTitle'
+import { Link } from 'react-router-dom'
+import { RatingBadge } from '../components/RatingBadge'
+import { getPlayers, getInternPlayers } from '../api/players'
 import type { PlayerWithStats } from '../types'
-import { getRankIconName, getRankByDistributionFraction } from '../utils/rankIcons'
+import { getRankByDistributionFraction } from '../utils/rankIcons'
 import arrowSvg from '../assets/images/SVG/arrow.svg'
 import kyberSvg from '../assets/images/SVG/kyber.svg'
 import beskarSvg from '../assets/images/SVG/beskar.svg'
@@ -28,23 +31,17 @@ const FLAG_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/2.8.0/fl
 
 type ViewMode = 'intern' | 'ranked'
 
-function getPlayerRankIcon(
-  player: PlayerWithStats,
-  viewMode: ViewMode,
-  sortColumn: number
-): string | null {
-  if (viewMode === 'intern') {
-    const rating = sortColumn === 2 ? player.dzrating : player.rating
-    return getRankIconName(rating)
-  }
-  if (player.played >= 5 && 'rankFraction' in player) {
+function getPlayerRankIcon(player: PlayerWithStats, viewMode: ViewMode): string | null {
+  if (viewMode === 'ranked' && player.played >= 5 && 'rankFraction' in player) {
     return getRankByDistributionFraction((player as { rankFraction: number }).rankFraction)
   }
   return null
 }
 
 export function HomePage() {
-  const [players, setPlayers] = useState<PlayerWithStats[]>([])
+  usePageTitle('Home')
+  const [internPlayers, setInternPlayers] = useState<PlayerWithStats[]>([])
+  const [rankedPlayers, setRankedPlayers] = useState<PlayerWithStats[]>([])
   const [loading, setLoading] = useState(true)
   const [playersError, setPlayersError] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('intern')
@@ -54,25 +51,41 @@ export function HomePage() {
 
   const allPlayers = useMemo(() => {
     if (viewMode === 'ranked') {
-      const ranked = players.filter((p) => p.played >= 5).sort((a, b) => b.br - a.br || a.nickname.localeCompare(b.nickname))
-      const total = ranked.length || 1
-      return ranked.map((p, i) => ({ ...p, rankFraction: (i + 1) / total }))
+      const qualified = [...rankedPlayers]
+        .filter((p) => p.played >= 5)
+        .sort((a, b) => b.br - a.br || a.nickname.localeCompare(b.nickname))
+      const total = qualified.length || 1
+      const qualifiedWithFraction = qualified.map((p, i) => ({ ...p, rankFraction: (i + 1) / total }))
+      const unqualified = [...rankedPlayers]
+        .filter((p) => p.played < 5)
+        .sort((a, b) => b.br - a.br || a.nickname.localeCompare(b.nickname))
+      return [...qualifiedWithFraction, ...unqualified]
     }
-    return players
-  }, [players, viewMode])
+    return internPlayers
+  }, [internPlayers, rankedPlayers, viewMode])
 
   const sortedPlayers = useMemo(() => {
     const list = [...allPlayers]
+    const dir = sortAscending ? 1 : -1
     if (viewMode === 'intern') {
-      const prop = sortColumn === 0 ? 'nickname' : sortColumn === 1 ? 'rating' : 'dzrating'
-      list.sort((a, b) => {
-        const av = a[prop as keyof PlayerWithStats]
-        const bv = b[prop as keyof PlayerWithStats]
-        const cmp = typeof av === 'number' && typeof bv === 'number'
-          ? sortAscending ? (av as number) - (bv as number) : (bv as number) - (av as number)
-          : String(av).localeCompare(String(bv))
-        return cmp !== 0 ? cmp : a.nickname.localeCompare(b.nickname)
-      })
+      if (sortColumn === 1) {
+        list.sort((a, b) => {
+          const avgA = (a.rating + a.dzrating) / 2
+          const avgB = (b.rating + b.dzrating) / 2
+          const cmp = dir * (avgA - avgB)
+          return cmp !== 0 ? cmp : a.nickname.localeCompare(b.nickname)
+        })
+      } else {
+        const prop = sortColumn === 0 ? 'nickname' : sortColumn === 2 ? 'rating' : 'dzrating'
+        list.sort((a, b) => {
+          const av = a[prop as keyof PlayerWithStats]
+          const bv = b[prop as keyof PlayerWithStats]
+          const cmp = typeof av === 'number' && typeof bv === 'number'
+            ? dir * ((av as number) - (bv as number))
+            : dir * String(av).localeCompare(String(bv))
+          return cmp !== 0 ? cmp : a.nickname.localeCompare(b.nickname)
+        })
+      }
     } else {
       if (sortColumn === 1) {
         list.sort((a, b) => {
@@ -88,8 +101,8 @@ export function HomePage() {
           const av = a[prop as keyof PlayerWithStats]
           const bv = b[prop as keyof PlayerWithStats]
           const cmp = typeof av === 'number' && typeof bv === 'number'
-            ? sortAscending ? (av as number) - (bv as number) : (bv as number) - (av as number)
-            : String(av).localeCompare(String(bv))
+            ? dir * ((av as number) - (bv as number))
+            : dir * String(av).localeCompare(String(bv))
           return cmp !== 0 ? cmp : a.nickname.localeCompare(b.nickname)
         })
       }
@@ -108,35 +121,31 @@ export function HomePage() {
 
   useEffect(() => {
     setPlayersError(null)
-    getPlayers()
-      .then((data) => {
-        setPlayers(Array.isArray(data) ? data : [])
+    Promise.all([getInternPlayers(), getPlayers()])
+      .then(([intern, ranked]) => {
+        setInternPlayers(Array.isArray(intern) ? intern : [])
+        setRankedPlayers(Array.isArray(ranked) ? ranked : [])
       })
-      .catch((err) => {
-        setPlayers([])
-        setPlayersError(err instanceof Error ? err.message : 'Kunne ikke laste spillere')
+      .catch(() => {
+        setPlayersError('Failed to load players. Please try again later.')
       })
       .finally(() => setLoading(false))
   }, [])
 
   const onSort = useCallback((columnIndex: number) => {
-    setSortColumn((prev) => {
-      if (prev === columnIndex) {
-        setSortAscending((a) => !a)
-        return prev
-      }
-      setSortAscending(false)
-      return columnIndex
-    })
-  }, [])
+    if (sortColumn === columnIndex) {
+      setSortAscending((a) => !a)
+    } else {
+      setSortColumn(columnIndex)
+      setSortAscending(columnIndex === 0)
+    }
+  }, [sortColumn])
 
   const onToggleMode = useCallback(() => {
     setViewMode((m) => (m === 'intern' ? 'ranked' : 'intern'))
-    if (viewMode === 'intern') {
-      setSortColumn(1)
-      setSortAscending(false)
-    }
-  }, [viewMode])
+    setSortColumn(1)
+    setSortAscending(false)
+  }, [])
 
   return (
     <main>
@@ -145,7 +154,7 @@ export function HomePage() {
           <div className="table">
             <input
               type="text"
-              className="input searchbar__table"
+              className="input searchbar__table sound__hover"
               placeholder="Search for names, stats ..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -155,7 +164,7 @@ export function HomePage() {
               <div className="table__info">
                 <h2 className="title title--small">Players</h2>
                 <div className="table__gamemode">
-                  <div className="btn--mode btn--switch">
+                  <div className="btn--mode btn--switch sound__hover sound__click">
                     <input
                       type="checkbox"
                       id="switch"
@@ -188,7 +197,7 @@ export function HomePage() {
                     {viewMode === 'intern' ? (
                       <tr>
                         <th
-                          className="head__cell head__cell--sorting head__player head__xxl"
+                          className="head__cell head__cell--sorting head__player head__xxl sound__hover sound__click"
                           onClick={() => onSort(0)}
                           role="button"
                           tabIndex={0}
@@ -199,7 +208,7 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 1 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 1 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(1)}
                           role="button"
                           tabIndex={0}
@@ -210,11 +219,22 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 2 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 2 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(2)}
                           role="button"
                           tabIndex={0}
                           onKeyDown={(e) => e.key === 'Enter' && onSort(2)}
+                        >
+                          <div className="head__content">
+                            CGO <img className="sortingIcon" src={arrowSvg} alt="" />
+                          </div>
+                        </th>
+                        <th
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 3 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          onClick={() => onSort(3)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => e.key === 'Enter' && onSort(3)}
                         >
                           <span className="head__content">
                             DZ <img className="sortingIcon" src={arrowSvg} alt="" />
@@ -224,7 +244,7 @@ export function HomePage() {
                     ) : (
                       <tr>
                         <th
-                          className="head__cell head__cell--sorting head__player head__xxl"
+                          className="head__cell head__cell--sorting head__player head__xxl sound__hover sound__click"
                           onClick={() => onSort(0)}
                           role="button"
                           tabIndex={0}
@@ -235,7 +255,7 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 1 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 1 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(1)}
                           role="button"
                           tabIndex={0}
@@ -246,7 +266,7 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 2 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 2 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(2)}
                           role="button"
                           tabIndex={0}
@@ -257,7 +277,7 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 3 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 3 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(3)}
                           role="button"
                           tabIndex={0}
@@ -268,7 +288,7 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 4 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 4 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(4)}
                           role="button"
                           tabIndex={0}
@@ -279,7 +299,7 @@ export function HomePage() {
                           </div>
                         </th>
                         <th
-                          className={`head__cell head__cell--sorting head__xxs ${sortColumn === 5 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
+                          className={`head__cell head__cell--sorting head__xxs sound__hover sound__click ${sortColumn === 5 ? (sortAscending ? 'asc' : 'desc') + ' active' : ''}`}
                           onClick={() => onSort(5)}
                           role="button"
                           tabIndex={0}
@@ -295,26 +315,28 @@ export function HomePage() {
                   <tbody className="table__body">
                     {loading ? (
                       <tr>
-                        <td colSpan={viewMode === 'intern' ? 3 : 6} className="table__cell">
-                          Laster…
+                        <td colSpan={viewMode === 'intern' ? 4 : 6} className="table__cell">
+                          Loading...
                         </td>
                       </tr>
                     ) : playersError ? (
                       <tr>
-                        <td colSpan={viewMode === 'intern' ? 3 : 6} className="table__cell">
-                          {playersError}. Sjekk at backend kjører på port 8080.
+                        <td colSpan={viewMode === 'intern' ? 4 : 6} className="table__cell">
+                          {playersError}
                         </td>
                       </tr>
                     ) : filteredPlayers.length === 0 ? (
                       <tr>
-                        <td colSpan={viewMode === 'intern' ? 3 : 6} className="table__cell">
-                          Ingen spillere. Legg til spillere i databasen eller sjekk at API returnerer data.
+                        <td colSpan={viewMode === 'intern' ? 4 : 6} className="table__cell">
+                          No players found
                         </td>
                       </tr>
                     ) : (
                       filteredPlayers.map((player, index) => {
-                        const displayNum = sortAscending ? filteredPlayers.length - index : index + 1
-                        const iconName = getPlayerRankIcon(player, viewMode, sortColumn)
+                        const displayNum = sortColumn === 0
+                          ? (sortAscending ? index + 1 : filteredPlayers.length - index)
+                          : (sortAscending ? filteredPlayers.length - index : index + 1)
+                        const iconName = getPlayerRankIcon(player, viewMode)
                         const iconSrc = iconName ? RANK_ICON_URLS[iconName] : null
                         return viewMode === 'intern' ? (
                           <tr key={player.id}>
@@ -332,6 +354,7 @@ export function HomePage() {
                                 </li>
                               </ul>
                             </td>
+                            <td className="table__cell table__xxs"><RatingBadge rating={Math.round((player.rating + player.dzrating) / 2)} /></td>
                             <td className="table__cell table__xxs">{player.rating}</td>
                             <td className="table__cell table__xxs">{player.dzrating}</td>
                           </tr>
@@ -366,7 +389,7 @@ export function HomePage() {
             </div>
           </div>
           <div className="gamemode">
-            <a className="link" href="/intern">
+            <Link className="link sound__hover sound__click" to="/intern">
               <div className="gamemode__intern">
                 <div className="gamemode__info">
                   <h3 className="title title--medium">Intern</h3>
@@ -378,8 +401,8 @@ export function HomePage() {
                   alt="intern"
                 />
               </div>
-            </a>
-            <a className="link" href="/ranked">
+            </Link>
+            <Link className="link sound__hover sound__click" to="/ranked">
               <div className="gamemode__ranked">
                 <div className="gamemode__info">
                   <h3 className="title title--medium">Ranked</h3>
@@ -391,16 +414,16 @@ export function HomePage() {
                   alt="ranked"
                 />
               </div>
-            </a>
+            </Link>
           </div>
           <a
-            className="btn btn--grey btn--partner"
+            className="btn btn--grey btn--partner sound__hover sound__click"
             href="https://discord.gg/SzKvdReAMH"
             target="_blank"
             rel="noopener noreferrer"
           >
             <div className="partner__info">
-              <h3 className="title title--small">The Super League</h3>
+              <h3 className="title title--small">TSL Battlefront</h3>
               <span>Discord Partner for ranked pugs, tournaments and more</span>
             </div>
             <img src={superLeagueImg} alt="super-league" />

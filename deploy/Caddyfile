@@ -1,0 +1,7 @@
+# HTTPS in front of the frontend (nginx), which serves the SPA and proxies /api to the backend.
+# SITE_ADDRESS comes from the .env file next to docker-compose.yml, e.g. 65-21-10-4.sslip.io.
+# Caddy gets and renews the Let's Encrypt certificate automatically.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	reverse_proxy frontend:80
+}

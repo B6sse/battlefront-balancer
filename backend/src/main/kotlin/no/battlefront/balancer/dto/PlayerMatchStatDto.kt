@@ -21,4 +21,6 @@ data class PlayerMatchStatDto(
     val perf: Double,
     val change: Int,
     @param:JsonProperty("NewBR") val newBR: Int,
+    val kills: Int? = null,
+    val deaths: Int? = null,
 )

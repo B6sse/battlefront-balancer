@@ -1,9 +1,13 @@
 import { useState, useCallback } from 'react'
+import { NavLink, useNavigate } from 'react-router-dom'
 import burgerUrl from '../assets/images/SVG/burger.svg'
 import crossUrl from '../assets/images/SVG/cross.svg'
 import adminIcon from '../assets/images/dune_sea_exchange.jpg'
+import { useAuth } from '../context/AuthContext'
 
 export function Header() {
+  const { user, authLoading, logout } = useAuth()
+  const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
 
   const toggleMenu = useCallback(() => {
@@ -25,6 +29,14 @@ export function Header() {
     document.body.removeAttribute('data-menu')
   }, [])
 
+  const navClass = ({ isActive }: { isActive: boolean }) =>
+    `link nav__element--link sound__hover sound__click${isActive ? ' nav__element--active' : ''}`
+
+  async function handleLogout() {
+    await logout()
+    navigate('/')
+  }
+
   return (
     <header className="header">
       <div className="container">
@@ -37,10 +49,26 @@ export function Header() {
                   src={adminIcon}
                   alt="Profile"
                 />
-                <div className="admin__status admin__status--disconnected" />
+                <div className={`admin__status ${user ? 'admin__status--connected' : 'admin__status--disconnected'}`} />
               </div>
+              {!authLoading && user && (
+                <div className="admin__login">
+                  <span>{user.username}</span>
+                </div>
+              )}
             </div>
-            <a className="link btn btn--login icon--login" href="/login" aria-label="Log in" />
+            {!authLoading && (
+              user ? (
+                <button
+                  type="button"
+                  className="btn btn--login icon--logout sound__hover sound__click"
+                  onClick={handleLogout}
+                  aria-label="Log out"
+                />
+              ) : (
+                <NavLink className="link btn btn--login icon--login sound__hover sound__click" to="/login" aria-label="Log in" />
+              )
+            )}
           </div>
           <button
             type="button"
@@ -59,25 +87,27 @@ export function Header() {
         <nav className="nav">
           <ul className="list nav__list">
             <li className="nav__element">
-              <a className="link nav__element--link nav__element--active" href="/" onClick={closeMenu}>
+              <NavLink end className={navClass} to="/" onClick={closeMenu}>
                 Play
-              </a>
+              </NavLink>
             </li>
             <li className="nav__element">
-              <a className="link nav__element--link" href="/matches" onClick={closeMenu}>
+              <NavLink className={navClass} to="/matches" onClick={closeMenu}>
                 Matches
-              </a>
+              </NavLink>
             </li>
             <li className="nav__element">
-              <a className="link nav__element--link" href="/stats" onClick={closeMenu}>
+              <NavLink className={navClass} to="/stats" onClick={closeMenu}>
                 Stats
-              </a>
+              </NavLink>
             </li>
-            <li className="nav__element">
-              <a className="link nav__element--link" href="/about" onClick={closeMenu}>
-                About
-              </a>
-            </li>
+            {user && (user.role === 'admin' || user.role === 'editor') && (
+              <li className="nav__element">
+                <NavLink className={navClass} to="/admin" onClick={closeMenu}>
+                  Admin
+                </NavLink>
+              </li>
+            )}
           </ul>
         </nav>
       </div>

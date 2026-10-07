@@ -94,24 +94,20 @@ class ModelTest {
                 nation = "no",
                 rating = 80,
                 dzrating = 80,
-                elo = 900,
             )
         assertEquals(1L, p.id)
         assertEquals("Test", p.nickname)
         assertEquals("no", p.nation)
         assertEquals(80, p.rating)
         assertEquals(80, p.dzrating)
-        assertEquals(900, p.elo)
         p.nickname = "Updated"
         p.nation = "us"
         p.rating = 85
         p.dzrating = 85
-        p.elo = 950
         assertEquals("Updated", p.nickname)
         assertEquals("us", p.nation)
         assertEquals(85, p.rating)
         assertEquals(85, p.dzrating)
-        assertEquals(950, p.elo)
     }
 
     /**
@@ -128,7 +124,6 @@ class ModelTest {
         assertEquals("", p.nation)
         assertEquals(0, p.rating)
         assertEquals(0, p.dzrating)
-        assertEquals(0, p.elo)
     }
 
     /**

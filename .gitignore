@@ -41,11 +41,17 @@ bin/
 ### Mac OS ###
 .DS_Store
 
+### Compose (SITE_ADDRESS for production) ###
+/.env
+
 ### Backend ###
 backend/.env
 backend/.env.local
 backend/application-local.yml
 backend/src/main/resources/application-local.yml
+
+### Database seed (contains user credentials) ###
+docker/postgres/local/
 
 ### Frontend (npm) ###
 frontend/node_modules/
@@ -58,3 +64,9 @@ frontend/.npm
 /.idea/
 
 docs/
+
+# reference code
+workflow
+
+# AI
+CLAUDE.md
