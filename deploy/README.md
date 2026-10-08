@@ -10,7 +10,7 @@ internet ──443──> caddy ──> frontend (nginx: SPA + /api proxy) ─�
 
 Without a domain of our own, the server gets a free hostname from [sslip.io](https://sslip.io): the IP address with
 dashes, e.g. `65-21-10-4.sslip.io`. To move to a real domain later, point the domain at the server, change
-`SITE_ADDRESS` and restart Caddy.
+`SITE_ADDRESS` (several addresses can be listed, comma-separated) and recreate Caddy with `dc up -d caddy`.
 
 ## 1. Create the server
 
@@ -92,7 +92,7 @@ an existing account from the seed, and create host tokens on the Admin page.
 dc ps                            # status
 dc logs -f backend               # backend log (also: caddy, frontend, postgres)
 git pull && dc up -d --build     # deploy a new version
-dc restart caddy                 # after changing SITE_ADDRESS in .env
+dc up -d caddy                   # after changing SITE_ADDRESS in .env (restart does not reread .env)
 ```
 
 ### Backup
