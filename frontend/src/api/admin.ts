@@ -4,6 +4,41 @@ export interface UserDto {
   id: number
   username: string
   role: string
+  /** Whether the user has set up the authenticator app (required for admins and editors) */
+  twoFactorEnabled: boolean
+}
+
+/** Sends a JSON request and throws the server's message on failure. */
+async function send<T>(path: string, method: string, body: unknown, fallbackError: string): Promise<T> {
+  const res = await fetch(`/api${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: body === undefined ? undefined : JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => null)
+  if (!res.ok) throw new Error(data?.message ?? fallbackError)
+  return data as T
+}
+
+/** Creates a supervisor or editor. */
+export function createUser(username: string, password: string, role: 'supervisor' | 'editor'): Promise<UserDto> {
+  return send<UserDto>('/admin/users', 'POST', { username, password, role }, 'Failed to create user')
+}
+
+/** Sets the password of a supervisor or editor. */
+export function setUserPassword(id: number, password: string): Promise<void> {
+  return send<void>(`/admin/users/${id}/password`, 'PUT', { password }, 'Failed to set password')
+}
+
+/** Removes a user's two-factor login so they set it up again at next login. */
+export function resetUserTwoFactor(id: number): Promise<void> {
+  return send<void>(`/admin/users/${id}/reset-2fa`, 'POST', undefined, 'Failed to reset two-factor login')
+}
+
+/** The logged-in admin changes their own password. */
+export function changeOwnPassword(currentPassword: string, newPassword: string, code: string): Promise<void> {
+  return send<void>('/admin/account/password', 'PUT', { currentPassword, newPassword, code }, 'Failed to change password')
 }
 
 export function getUsers(): Promise<UserDto[]> {

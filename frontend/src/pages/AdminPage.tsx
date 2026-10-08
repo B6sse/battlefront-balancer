@@ -3,10 +3,11 @@ import { getPlayers, createPlayer, updatePlayer, deletePlayer } from '../api/pla
 import type { PlayerCreateRequest, PlayerUpdateRequest } from '../api/players'
 import { getRandomizerWeights, updateRandomizerWeights } from '../api/ranked'
 import type { RandomizerWeightEntry, RandomizerWeightsResponse } from '../api/ranked'
-import { getCurrentSeason, startNextSeason, cleanupSeason, getUsers, updateUserRole, deleteUser } from '../api/admin'
+import { getCurrentSeason, startNextSeason, cleanupSeason, getUsers } from '../api/admin'
 import type { UserDto } from '../api/admin'
 import { useAuth } from '../context/AuthContext'
 import { HostTokensPanel } from '../components/HostTokensPanel'
+import { UsersPanel } from '../components/UsersPanel'
 import { PlayerRequestsPanel } from '../components/PlayerRequestsPanel'
 import type { PlayerWithStats } from '../types'
 
@@ -114,9 +115,6 @@ export function AdminPage() {
   const [cleanupSelectedSeason, setCleanupSelectedSeason] = useState<number | null>(null)
 
   const [users, setUsers] = useState<UserDto[] | null>(null)
-  const [userRoleUpdating, setUserRoleUpdating] = useState<Record<number, boolean>>({})
-  const [deleteConfirmUserId, setDeleteConfirmUserId] = useState<number | null>(null)
-  const [usersError, setUsersError] = useState<string | null>(null)
 
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -205,34 +203,8 @@ export function AdminPage() {
     }
   }
 
-  async function handleUserRoleChange(id: number, newRole: string) {
-    setUsersError(null)
-    setUserRoleUpdating((prev) => ({ ...prev, [id]: true }))
-    try {
-      const updated = await updateUserRole(id, newRole)
-      setUsers((prev) => prev ? prev.map((u) => u.id === updated.id ? updated : u) : prev)
-    } catch (err) {
-      setUsersError(err instanceof Error ? err.message : 'Failed to update role')
-    } finally {
-      setUserRoleUpdating((prev) => ({ ...prev, [id]: false }))
-    }
-  }
-
-  async function handleUserDelete(id: number, username: string) {
-    if (deleteConfirmUserId !== id) {
-      setDeleteConfirmUserId(id)
-      return
-    }
-    setUsersError(null)
-    try {
-      await deleteUser(id)
-      setUsers((prev) => prev ? prev.filter((u) => u.id !== id) : prev)
-      showSuccess(`${username} removed`)
-    } catch (err) {
-      setUsersError(err instanceof Error ? err.message : 'Failed to delete user')
-    } finally {
-      setDeleteConfirmUserId(null)
-    }
+  function reloadUsers() {
+    getUsers().then(setUsers).catch(() => {})
   }
 
   const filtered = useMemo(() => {
@@ -622,72 +594,7 @@ export function AdminPage() {
         )}
 
         {users !== null && (
-          <div className="table">
-            <div className="table__list">
-              <div className="table__info">
-                <h2 className="title title--small">Users</h2>
-                <span className="table__counter">{users.length}</span>
-              </div>
-              {usersError && <p style={{ padding: '0 20px 10px', color: 'var(--color-red)', fontSize: '1.4rem' }}>{usersError}</p>}
-              <div className="table__hidden" style={{ overflow: 'auto', maxHeight: '40vh' }}>
-                <table className="table__content table__search" style={{ minWidth: '100%' }}>
-                  <thead className="table__head table__sticky">
-                    <tr>
-                      <th className="head__cell head__player" style={{ width: '40%' }}>Username</th>
-                      <th className="head__cell" style={{ width: '40%' }}>Role</th>
-                      <th className="head__cell" style={{ width: '20%' }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="table__body">
-                    {users.map((u) => {
-                      const isCurrentUser = currentUser?.id === u.id
-                      const isAdmin = u.role === 'admin'
-                      const isUpdating = !!userRoleUpdating[u.id]
-                      const canEdit = !isAdmin && !isCurrentUser
-                      return (
-                        <tr key={u.id}>
-                          <td className="table__cell table__player">
-                            {isCurrentUser && <span style={{ color: 'var(--color-yellow)', marginRight: '6px' }}>▶</span>}{u.username}
-                          </td>
-                          <td className="table__cell">
-                            {canEdit ? (
-                              <select
-                                value={u.role}
-                                disabled={isUpdating}
-                                onChange={(e) => handleUserRoleChange(u.id, e.target.value)}
-                                style={{ fontSize: '1.4rem', background: 'transparent', color: 'inherit', border: '1px solid var(--color-grey)', borderRadius: '4px', padding: '2px 6px', opacity: isUpdating ? 0.5 : 1 }}
-                              >
-                                <option value="editor">editor</option>
-                                <option value="supervisor">supervisor</option>
-                              </select>
-                            ) : (
-                              <span style={{ color: isAdmin ? 'inherit' : 'var(--color-grey)' }}>{u.role}</span>
-                            )}
-                          </td>
-                          <td className="table__cell table__action">
-                            {canEdit && (
-                              <ul className="list">
-                                <li>
-                                  <button
-                                    type="button"
-                                    className={`delete sound__hover sound__delete${deleteConfirmUserId === u.id ? ' delete--confirm' : ''}`}
-                                    onClick={() => handleUserDelete(u.id, u.username)}
-                                    disabled={isUpdating}
-                                    title={deleteConfirmUserId === u.id ? 'Click again to confirm' : `Remove ${u.username}`}
-                                    aria-label={`Remove ${u.username}`}
-                                  />
-                                </li>
-                              </ul>
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+          <UsersPanel users={users} currentUserId={currentUser?.id ?? null} onUsersChanged={reloadUsers} onSuccess={showSuccess} />
         )}
 
         {users !== null && <HostTokensPanel users={users} onSuccess={showSuccess} />}

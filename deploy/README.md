@@ -115,6 +115,41 @@ dc up -d --build
 
 Then update the address in each host's Auric settings (or point the domain at the new server).
 
+## Accounts: passwords and two-factor login
+
+Admins manage supervisors and editors on the Admin page (add users, set passwords, reset two-factor login) and change
+their own password there. Admins and editors must use an authenticator app at login; the first login sets it up and
+shows ten one-time recovery codes. An admin cannot change another admin, so for an admin who is locked out (forgotten
+password, or lost phone and recovery codes) use these on the server, in `~/battlefront-balancer`:
+
+```bash
+# Paste once per login session
+psqlv() {
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T postgres \
+    sh -c 'psql -q -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v name="$1" -v hash="$2"' _ "$@"
+}
+
+setpw() {   # setpw <username>: set a new password (asked without echo)
+  read -s -p "New password for $1: " PW; echo
+  HASH=$(docker run --rm httpd:2-alpine htpasswd -nbBC 12 "" "$PW" | tr -d ':\n'); unset PW
+  case "$HASH" in '$2y$12$'*) ;; *) echo "Could not create hash, nothing changed"; return 1 ;; esac
+  psqlv "$1" "$HASH" <<'SQL'
+UPDATE users SET password = :'hash' WHERE username = :'name' RETURNING username, role;
+SQL
+}
+
+reset2fa() {   # reset2fa <username>: remove two-factor login; set up again at next login
+  psqlv "$1" "" <<'SQL'
+DELETE FROM user_recovery_codes WHERE user_id = (SELECT id FROM users WHERE username = :'name');
+UPDATE users SET totp_secret = NULL, totp_enabled = FALSE, totp_last_step = NULL WHERE username = :'name' RETURNING username, role;
+SQL
+}
+```
+
+`(0 rows)` means the username does not exist (usernames are case-sensitive). The new password has to meet the same
+rules as on the website (at least 10 characters with an uppercase letter, a lowercase letter and a special character);
+`setpw` does not check this for you.
+
 ## Troubleshooting
 
 - **No certificate / browser warning:** check `dc logs caddy`. Ports 80 and 443 must be open in the Hetzner firewall,
