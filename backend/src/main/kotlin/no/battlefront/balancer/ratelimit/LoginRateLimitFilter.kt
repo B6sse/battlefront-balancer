@@ -53,13 +53,16 @@ class LoginRateLimitFilter(
     }
 
     /**
-     * Returns whether the request is a POST to the login endpoint (and thus subject to rate limiting).
+     * Returns whether the request is a POST to the login endpoints, including the two-factor steps (and thus subject
+     * to rate limiting).
      *
      * @param request the HTTP request to check
-     * @return true if the request is POST /api/login, false otherwise
+     * @return true if the request is POST /api/login or /api/login/..., false otherwise
      */
-    private fun isLoginRequest(request: HttpServletRequest): Boolean =
-        "POST" == request.method && request.requestURI?.endsWith("/api/login") == true
+    private fun isLoginRequest(request: HttpServletRequest): Boolean {
+        val uri = request.requestURI ?: return false
+        return "POST" == request.method && (uri.endsWith("/api/login") || uri.contains("/api/login/"))
+    }
 
     /**
      * Derives a client identifier for rate limiting: first hop from X-Forwarded-For when present, else remote address.

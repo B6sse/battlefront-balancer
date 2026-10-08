@@ -13,3 +13,9 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
+
+# Flow tests log in many times per minute from the same address
+app:
+  rate-limit:
+    login:
+      enabled: false

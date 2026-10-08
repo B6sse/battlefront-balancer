@@ -12,6 +12,9 @@ import jakarta.persistence.Table
  *
  * @param role one of "admin", "supervisor" (stored without ROLE_ prefix; mapped to authority in [no.battlefront.balancer.security.AppUserDetails])
  * @param password bcrypt-hashed; never stored in plain text
+ * @param totpSecret base32 secret for the authenticator app, or null if two-factor is not set up
+ * @param totpEnabled true once the user has confirmed the authenticator app; required for admins and editors
+ * @param totpLastStep last accepted 30-second time step, so the same code cannot be used twice
  */
 @Entity
 @Table(name = "users")
@@ -25,4 +28,10 @@ class User(
     var password: String = "",
     @Column(nullable = false, length = 50)
     var role: String = "",
+    @Column(name = "totp_secret", length = 64)
+    var totpSecret: String? = null,
+    @Column(name = "totp_enabled", nullable = false)
+    var totpEnabled: Boolean = false,
+    @Column(name = "totp_last_step")
+    var totpLastStep: Long? = null,
 )

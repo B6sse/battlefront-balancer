@@ -15,15 +15,16 @@ import no.battlefront.balancer.dto.UserDto
 import no.battlefront.balancer.model.Player
 import no.battlefront.balancer.model.Randomizer
 import no.battlefront.balancer.model.User
+import no.battlefront.balancer.repository.UserRepository
 import no.battlefront.balancer.security.AppUserDetails
 import no.battlefront.balancer.service.MatchService
 import no.battlefront.balancer.service.PlayerService
 import no.battlefront.balancer.service.RandomizerService
+import no.battlefront.balancer.service.TwoFactorService
 import no.battlefront.balancer.service.UserService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -57,36 +58,40 @@ class ControllerTest {
     }
 
     @Test
-    fun `AuthController login sets security context and returns role`() {
+    fun `AuthController login logs a supervisor in directly`() {
         val authenticationManager = mock(AuthenticationManager::class.java)
-        val controller = AuthController(authenticationManager)
+        val userRepository = mock(UserRepository::class.java)
+        val twoFactorService = mock(TwoFactorService::class.java)
+        val controller = AuthController(authenticationManager, userRepository, twoFactorService)
 
-        val user = User(id = 42L, username = "admin", password = "pw", role = "admin")
+        val user = User(id = 42L, username = "sup", password = "pw", role = "supervisor")
         val details = AppUserDetails(user)
         val auth = UsernamePasswordAuthenticationToken(details, null, details.authorities)
 
         `when`(authenticationManager.authenticate(any(Authentication::class.java))).thenReturn(auth)
+        `when`(userRepository.findById(42L)).thenReturn(java.util.Optional.of(user))
+        `when`(twoFactorService.isRequired(user)).thenReturn(false)
 
         val httpRequest = mock(HttpServletRequest::class.java)
         val httpResponse = mock(HttpServletResponse::class.java)
         val loginSession = mock<jakarta.servlet.http.HttpSession>()
         `when`(httpRequest.getSession(true)).thenReturn(loginSession)
 
-        val response = controller.login(LoginRequest(username = "admin", password = "pw"), httpRequest, httpResponse)
+        val response = controller.login(LoginRequest(username = "sup", password = "pw"), httpRequest, httpResponse)
         assertEquals(HttpStatus.OK, response.statusCode)
 
-        val body = requireNotNull(response.body) as no.battlefront.balancer.dto.CurrentUserDto
-        assertEquals(42L, body.id)
-        assertEquals("admin", body.username)
-        assertEquals("admin", body.role)
-
-        assertTrue(SecurityContextHolder.getContext().authentication == auth)
+        val body = requireNotNull(response.body)
+        assertEquals("OK", body.status)
+        assertEquals(42L, body.user?.id)
+        assertEquals("supervisor", body.user?.role)
+        verify(httpRequest).changeSessionId()
+        assertEquals(42L, (SecurityContextHolder.getContext().authentication!!.principal as AppUserDetails).userId)
     }
 
     @Test
     fun `AuthController login throws when authentication fails`() {
         val authenticationManager = mock(AuthenticationManager::class.java)
-        val controller = AuthController(authenticationManager)
+        val controller = AuthController(authenticationManager, mock(UserRepository::class.java), mock(TwoFactorService::class.java))
 
         `when`(authenticationManager.authenticate(any(Authentication::class.java))).thenThrow(
             BadCredentialsException("bad credentials"),
@@ -104,7 +109,8 @@ class ControllerTest {
 
     @Test
     fun `AuthController me returns 401 when principal is null`() {
-        val controller = AuthController(mock(AuthenticationManager::class.java))
+        val controller =
+            AuthController(mock(AuthenticationManager::class.java), mock(UserRepository::class.java), mock(TwoFactorService::class.java))
         val response = controller.me(null)
 
         assertEquals(HttpStatus.UNAUTHORIZED, response.statusCode)
@@ -112,7 +118,8 @@ class ControllerTest {
 
     @Test
     fun `AuthController me returns role without ROLE_ prefix`() {
-        val controller = AuthController(mock(AuthenticationManager::class.java))
+        val controller =
+            AuthController(mock(AuthenticationManager::class.java), mock(UserRepository::class.java), mock(TwoFactorService::class.java))
 
         val user = User(id = 7L, username = "s", password = "pw", role = "supervisor")
         val principal = AppUserDetails(user)
@@ -128,7 +135,7 @@ class ControllerTest {
     @Test
     fun `AuthController logout invalidates session and clears security context`() {
         val authenticationManager = mock(AuthenticationManager::class.java)
-        val controller = AuthController(authenticationManager)
+        val controller = AuthController(authenticationManager, mock(UserRepository::class.java), mock(TwoFactorService::class.java))
 
         val user = User(id = 1L, username = "u", password = "pw", role = "admin")
         val principal = AppUserDetails(user)

@@ -154,8 +154,15 @@ class SecurityConfig {
                         "/api/matches",
                         "/api/matches/*",
                     ).permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/login", "/api/logout", "/api/balance")
-                    .permitAll()
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/login",
+                        "/api/login/2fa",
+                        "/api/login/2fa/setup",
+                        "/api/login/2fa/setup/confirm",
+                        "/api/logout",
+                        "/api/balance",
+                    ).permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/admin/**")
                     .hasAuthority("ROLE_admin")
                     .requestMatchers(HttpMethod.POST, "/api/admin/**")

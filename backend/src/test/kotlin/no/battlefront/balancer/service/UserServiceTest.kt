@@ -7,11 +7,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import java.util.Optional
 
 class UserServiceTest {
     private val userRepository = mock(UserRepository::class.java)
-    private val service = UserService(userRepository)
+    private val service =
+        UserService(userRepository, BCryptPasswordEncoder(4), mock(TwoFactorService::class.java))
 
     @Test
     fun `listUsers returns sorted list`() {
