@@ -46,15 +46,11 @@ export function getUsers(): Promise<UserDto[]> {
 }
 
 export function updateUserRole(id: number, role: string): Promise<UserDto> {
-  return fetchApi<UserDto>(`/admin/users/${id}/role`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ role }),
-  })
+  return send<UserDto>(`/admin/users/${id}/role`, 'PUT', { role }, 'Failed to update role')
 }
 
 export function deleteUser(id: number): Promise<void> {
-  return fetchApi<void>(`/admin/users/${id}`, { method: 'DELETE' })
+  return send<void>(`/admin/users/${id}`, 'DELETE', undefined, 'Failed to delete user')
 }
 
 export interface HostTokenDto {
