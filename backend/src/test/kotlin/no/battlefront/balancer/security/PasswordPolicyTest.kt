@@ -6,20 +6,18 @@ import org.junit.jupiter.api.assertThrows
 
 class PasswordPolicyTest {
     @Test
-    fun `accepts a password with length, upper, lower and special character`() {
-        assertDoesNotThrow { PasswordPolicy.requireValid("Battlefront!") }
-        assertDoesNotThrow { PasswordPolicy.requireValid("ÆøåKode#2026") }
+    fun `accepts any password of at least 10 characters`() {
+        assertDoesNotThrow { PasswordPolicy.requireValid("battlefront") }
+        assertDoesNotThrow { PasswordPolicy.requireValid("1234567890") }
+        assertDoesNotThrow { PasswordPolicy.requireValid("rebel scum dz") }
     }
 
     @Test
-    fun `rejects passwords missing a rule`() {
+    fun `rejects short, blank-padded and overly long passwords`() {
         listOf(
             "Short!a",
-            "alllowercase!",
-            "ALLUPPERCASE!",
-            "NoSpecialChars1",
-            "Spaces Only Aa",
-            "Aa!" + "x".repeat(70),
+            "   short   ",
+            "x".repeat(73),
         ).forEach { password ->
             assertThrows<IllegalArgumentException>(password) { PasswordPolicy.requireValid(password) }
         }

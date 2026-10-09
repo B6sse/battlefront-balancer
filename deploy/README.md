@@ -147,7 +147,7 @@ SQL
 ```
 
 `(0 rows)` means the username does not exist (usernames are case-sensitive). The new password has to meet the same
-rules as on the website (at least 10 characters with an uppercase letter, a lowercase letter and a special character);
+rule as on the website (at least 10 characters);
 `setpw` does not check this for you.
 
 ## Troubleshooting

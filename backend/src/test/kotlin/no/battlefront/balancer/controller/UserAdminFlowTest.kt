@@ -107,7 +107,7 @@ class UserAdminFlowTest {
         ).andExpect(status().isBadRequest)
         asAdmin(post("/api/admin/users").content("""{"username":"newsup","password":"Battlefront!","role":"editor"}"""))
             .andExpect(jsonPath("$.message").value("Username is already taken"))
-        asAdmin(post("/api/admin/users").content("""{"username":"weak","password":"battlefront","role":"editor"}"""))
+        asAdmin(post("/api/admin/users").content("""{"username":"weak","password":"tooshort","role":"editor"}"""))
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.startsWith("Password must be at least 10 characters")))
     }

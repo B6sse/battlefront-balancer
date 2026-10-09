@@ -10,17 +10,13 @@ object PasswordPolicy {
     private const val MAX_BYTES = 72
     private val USERNAME_RE = Regex("^[A-Za-z0-9_.-]{3,32}$")
 
-    const val RULES =
-        "Password must be at least $MIN_LENGTH characters and include an uppercase letter, a lowercase letter and a special character"
+    const val RULES = "Password must be at least $MIN_LENGTH characters"
 
     /**
      * @throws IllegalArgumentException if [password] breaks the rules.
      */
     fun requireValid(password: String) {
-        require(password.length >= MIN_LENGTH) { RULES }
-        require(password.any { it.isUpperCase() }) { RULES }
-        require(password.any { it.isLowerCase() }) { RULES }
-        require(password.any { !it.isLetterOrDigit() && !it.isWhitespace() }) { RULES }
+        require(password.trim().length >= MIN_LENGTH) { RULES }
         require(password.toByteArray().size <= MAX_BYTES) { "Password is too long" }
     }
 

@@ -7,12 +7,7 @@ const smallButton = { fontSize: '1.2rem', padding: '4px 8px' }
 
 /** Same rules as the backend's PasswordPolicy, for an early and clear message. */
 function passwordError(password: string): string | null {
-  const ok =
-    password.length >= 10 &&
-    /\p{Lu}/u.test(password) &&
-    /\p{Ll}/u.test(password) &&
-    /[^\p{L}\p{N}\s]/u.test(password)
-  return ok ? null : 'Password must be at least 10 characters and include an uppercase letter, a lowercase letter and a special character'
+  return password.trim().length >= 10 ? null : 'Password must be at least 10 characters'
 }
 
 /**
