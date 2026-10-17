@@ -131,6 +131,7 @@ psqlv() {
 
 setpw() {   # setpw <username>: set a new password (asked without echo)
   read -s -p "New password for $1: " PW; echo
+  [ "${#PW}" -ge 10 ] || { echo "Password must be at least 10 characters, nothing changed"; unset PW; return 1; }
   HASH=$(docker run --rm httpd:2-alpine htpasswd -nbBC 12 "" "$PW" | tr -d ':\n'); unset PW
   case "$HASH" in '$2y$12$'*) ;; *) echo "Could not create hash, nothing changed"; return 1 ;; esac
   psqlv "$1" "$HASH" <<'SQL'
@@ -147,8 +148,8 @@ SQL
 ```
 
 `(0 rows)` means the username does not exist (usernames are case-sensitive). The new password has to meet the same
-rule as on the website (at least 10 characters);
-`setpw` does not check this for you.
+rule as on the website (at least 10 characters), and `setpw` refuses anything shorter. Press Ctrl+C at the
+password prompt to cancel without changing anything.
 
 ## Troubleshooting
 
