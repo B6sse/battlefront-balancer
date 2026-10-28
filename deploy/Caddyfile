@@ -1,7 +1,14 @@
 # HTTPS in front of the frontend (nginx), which serves the SPA and proxies /api to the backend.
-# SITE_ADDRESS comes from the .env file next to docker-compose.yml, e.g. 65-21-10-4.sslip.io.
-# Caddy gets and renews the Let's Encrypt certificate automatically.
+# Both values come from the .env file next to docker-compose.yml. Caddy gets and renews Let's Encrypt certificates
+# automatically.
+#
+# SITE_ADDRESS    every hostname the site answers on, comma-separated, e.g. "swbf.dev, www.swbf.dev, 1-2-3-4.sslip.io"
+# CANONICAL_HOST  optional main hostname, e.g. "swbf.dev". Other hostnames in SITE_ADDRESS redirect there (308, so API
+#                 POSTs keep working), except *.sslip.io, which keeps serving the site directly.
 {$SITE_ADDRESS} {
+	@other expression `'{$CANONICAL_HOST}' != '' && {host} != '{$CANONICAL_HOST}' && !{host}.endsWith('.sslip.io')`
+	redir @other https://{$CANONICAL_HOST}{uri} 308
+
 	encode zstd gzip
 	reverse_proxy frontend:80
 }

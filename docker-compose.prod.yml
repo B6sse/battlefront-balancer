@@ -24,6 +24,7 @@ services:
       - "443:443/udp"
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:?Set SITE_ADDRESS in the .env file next to docker-compose.yml}
+      CANONICAL_HOST: ${CANONICAL_HOST:-}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

@@ -9,8 +9,15 @@ internet ──443──> caddy ──> frontend (nginx: SPA + /api proxy) ─�
 ```
 
 Without a domain of our own, the server gets a free hostname from [sslip.io](https://sslip.io): the IP address with
-dashes, e.g. `65-21-10-4.sslip.io`. To move to a real domain later, point the domain at the server, change
-`SITE_ADDRESS` (several addresses can be listed, comma-separated) and recreate Caddy with `dc up -d caddy`.
+dashes, e.g. `65-21-10-4.sslip.io`. To use real domains, point them at the server (A and AAAA records), list every
+hostname in `SITE_ADDRESS` (comma-separated) and recreate Caddy with `dc up -d caddy`. With `CANONICAL_HOST` set,
+all other hostnames redirect there (old domains keep working), while the sslip.io name keeps serving the site
+directly. The `.env` file then looks like:
+
+```bash
+SITE_ADDRESS="swbf.dev, www.swbf.dev, battlefront-balancer.eu, www.battlefront-balancer.eu, 57-129-179-192.sslip.io"
+CANONICAL_HOST=swbf.dev
+```
 
 ## 1. Create the server
 

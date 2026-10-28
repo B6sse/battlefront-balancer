@@ -2,7 +2,7 @@
 
 A web app for making Star Wars Battlefront 2015 more competitive with ranked play and ratings for balanced matches. Check it out here:
 
-https://battlefront-balancer.eu/ 
+https://swbf.dev/ 
 
 ## Tech stack
 
