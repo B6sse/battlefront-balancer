@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { getPlayers, createPlayer, updatePlayer, deletePlayer } from '../api/players'
 import type { PlayerCreateRequest, PlayerUpdateRequest } from '../api/players'
 import { getRandomizerWeights, updateRandomizerWeights } from '../api/ranked'
@@ -598,6 +599,23 @@ export function AdminPage() {
         )}
 
         {users !== null && <HostTokensPanel users={users} onSuccess={showSuccess} />}
+
+        {currentUser?.role === 'admin' && (
+          <div className="table">
+            <div className="table__list">
+              <div className="table__info">
+                <h2 className="title title--small">Auric</h2>
+              </div>
+              <p style={{ padding: '0 20px 10px', fontSize: '1.3rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                The approved mods list and the Auric version info that hosts and the launcher fetch.
+              </p>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '0 20px 20px' }}>
+                <Link to="/admin/mods" className="btn btn--transparent sound__hover sound__click" style={{ color: 'inherit', textDecoration: 'none' }}>Approved mods</Link>
+                <Link to="/admin/auric" className="btn btn--transparent sound__hover sound__click" style={{ color: 'inherit', textDecoration: 'none' }}>Auric version</Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         {currentSeason !== null && cleanupSelectedSeason !== null && (
           <div className="table">

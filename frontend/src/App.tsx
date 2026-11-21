@@ -7,6 +7,8 @@ import { InternPage } from './pages/InternPage'
 import { RankedPage } from './pages/RankedPage'
 import { LoginPage } from './pages/LoginPage'
 import { AdminPage } from './pages/AdminPage'
+import { AdminModsPage } from './pages/AdminModsPage'
+import { AdminAuricPage } from './pages/AdminAuricPage'
 import { SoundEffects } from './components/SoundEffects'
 import { AuthProvider } from './context/AuthContext'
 import { RequireRole } from './components/RequireRole'
@@ -35,6 +37,22 @@ function App() {
                     element={
                       <RequireRole roles={['admin', 'editor']}>
                         <AdminPage />
+                      </RequireRole>
+                    }
+                  />
+                  <Route
+                    path="/admin/mods"
+                    element={
+                      <RequireRole roles={['admin']}>
+                        <AdminModsPage />
+                      </RequireRole>
+                    }
+                  />
+                  <Route
+                    path="/admin/auric"
+                    element={
+                      <RequireRole roles={['admin']}>
+                        <AdminAuricPage />
                       </RequireRole>
                     }
                   />

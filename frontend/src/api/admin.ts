@@ -105,3 +105,74 @@ export function cleanupSeason(season: number): Promise<{ season: number; deleted
     body: JSON.stringify({ season }),
   })
 }
+
+export type ModCategory = 'OPTIONAL' | 'MUST_MATCH_HOST'
+
+/** An approved mod as admins see it (GET /api/admin/mods), including inactive ones and notes. */
+export interface ApprovedModDto {
+  id: number
+  title: string
+  version: string
+  author: string
+  category: ModCategory
+  contentSha256: string
+  contentSize: number
+  keyId: string
+  axSha256: string
+  axSize: number
+  downloadUrl: string | null
+  active: boolean
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+/** Body for creating or replacing a mod. `active` omitted keeps the current state (new mods are active). */
+export interface ApprovedModRequest {
+  title: string
+  version: string
+  author: string
+  category: string
+  contentSha256: string
+  contentSize: number | null
+  keyId: string
+  axSha256: string
+  axSize: number | null
+  downloadUrl: string | null
+  notes: string | null
+  active?: boolean
+}
+
+export function getApprovedMods(): Promise<ApprovedModDto[]> {
+  return send<ApprovedModDto[]>('/admin/mods', 'GET', undefined, 'Failed to load mods')
+}
+
+export function createApprovedMod(mod: ApprovedModRequest): Promise<ApprovedModDto> {
+  return send<ApprovedModDto>('/admin/mods', 'POST', mod, 'Failed to add mod')
+}
+
+export function updateApprovedMod(id: number, mod: ApprovedModRequest): Promise<ApprovedModDto> {
+  return send<ApprovedModDto>(`/admin/mods/${id}`, 'PUT', mod, 'Failed to save mod')
+}
+
+export function deleteApprovedMod(id: number): Promise<void> {
+  return send<void>(`/admin/mods/${id}`, 'DELETE', undefined, 'Failed to delete mod')
+}
+
+/** Auric version settings; every field is null until an admin has saved them. */
+export interface AuricVersionSettings {
+  latestVersion: string | null
+  minimumVersion: string | null
+  downloadUrl: string | null
+  sha256: string | null
+  releaseNotes: string | null
+  updatedAt: string | null
+}
+
+export function getAuricVersion(): Promise<AuricVersionSettings> {
+  return send<AuricVersionSettings>('/admin/auric-version', 'GET', undefined, 'Failed to load Auric version')
+}
+
+export function saveAuricVersion(settings: Omit<AuricVersionSettings, 'updatedAt'>): Promise<AuricVersionSettings> {
+  return send<AuricVersionSettings>('/admin/auric-version', 'PUT', settings, 'Failed to save Auric version')
+}

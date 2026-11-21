@@ -34,6 +34,9 @@ import org.springframework.security.web.util.matcher.RequestMatcher
  * are disabled in favour of custom [AuthController][no.battlefront.balancer.controller.AuthController] endpoints.
  * Login rate limiting is applied before authentication.
  *
+ * The approved mods list (GET /api/mods/approved) and Auric version info (GET /api/auric/version) are public too, and
+ * also allowed with a host token so Auric hosts can send their token on every call.
+ *
  * Auric hosts authenticate with `Authorization: Bearer <token>` instead of a session. Those requests are handled
  * by a separate, stateless chain ([hostTokenFilterChain]) that only allows the host endpoints.
  */
@@ -101,7 +104,7 @@ class SecurityConfig {
                 auth
                     .requestMatchers("/error")
                     .permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/players", "/api/players/by-persona")
+                    .requestMatchers(HttpMethod.GET, "/api/players", "/api/players/by-persona", "/api/mods/approved", "/api/auric/version")
                     .hasAuthority(HostTokenAuthenticationFilter.ROLE_HOST)
                     .requestMatchers(HttpMethod.POST, "/api/balance", "/api/player-requests", "/api/matches/raw")
                     .hasAuthority(HostTokenAuthenticationFilter.ROLE_HOST)
@@ -153,6 +156,8 @@ class SecurityConfig {
                         "/api/seasons",
                         "/api/matches",
                         "/api/matches/*",
+                        "/api/mods/approved",
+                        "/api/auric/version",
                     ).permitAll()
                     .requestMatchers(
                         HttpMethod.POST,
@@ -169,7 +174,7 @@ class SecurityConfig {
                     .hasAuthority("ROLE_admin")
                     .requestMatchers(HttpMethod.PUT, "/api/admin/**")
                     .hasAuthority("ROLE_admin")
-                    .requestMatchers(HttpMethod.DELETE, "/api/admin/users/*", "/api/admin/host-tokens/*")
+                    .requestMatchers(HttpMethod.DELETE, "/api/admin/users/*", "/api/admin/host-tokens/*", "/api/admin/mods/*")
                     .hasAuthority("ROLE_admin")
                     .requestMatchers(HttpMethod.GET, "/api/randomizer/weights")
                     .hasAuthority("ROLE_admin")
