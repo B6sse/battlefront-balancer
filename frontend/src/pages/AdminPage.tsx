@@ -607,11 +607,12 @@ export function AdminPage() {
                 <h2 className="title title--small">Auric</h2>
               </div>
               <p style={{ padding: '0 20px 10px', fontSize: '1.3rem', color: 'var(--color-text-muted)', margin: 0 }}>
-                The approved mods list and the Auric version info that hosts and the launcher fetch.
+                The approved mods list, the Auric version info and the relay servers that hosts and the launcher fetch.
               </p>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', padding: '0 20px 20px' }}>
                 <Link to="/admin/mods" className="btn btn--transparent sound__hover sound__click" style={{ color: 'inherit', textDecoration: 'none' }}>Approved mods</Link>
                 <Link to="/admin/auric" className="btn btn--transparent sound__hover sound__click" style={{ color: 'inherit', textDecoration: 'none' }}>Auric version</Link>
+                <Link to="/admin/relays" className="btn btn--transparent sound__hover sound__click" style={{ color: 'inherit', textDecoration: 'none' }}>Relays</Link>
               </div>
             </div>
           </div>

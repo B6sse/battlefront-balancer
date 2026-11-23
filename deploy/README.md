@@ -158,6 +158,23 @@ SQL
 rule as on the website (at least 10 characters), and `setpw` refuses anything shorter. Press Ctrl+C at the
 password prompt to cancel without changing anything.
 
+## Relay sessions (ticket secret)
+
+The server list and relay tickets for Auric (`/api/relay/sessions`) need a secret that the website shares with the
+relay servers. It is only read from `backend/.env`; it is never stored in the database, logged or returned. Without it
+those endpoints answer 503 and everything else works.
+
+```bash
+# on the server, in ~/battlefront-balancer: create the secret once
+echo "RELAY_TICKET_SECRET=$(openssl rand -hex 32)" >> backend/.env
+dc up -d backend                 # recreate the backend so it reads the new value
+dc logs backend | grep -i relay  # no "not configured" warning = it is in use
+```
+
+Give each relay server exactly the same text (the 64 characters after `=`; the relay uses the text itself as the HMAC
+key, not the bytes the hex stands for). Changing the secret makes every ticket already handed out invalid. Then add the
+relays on the website: Admin → Relays.
+
 ## Troubleshooting
 
 - **No certificate / browser warning:** check `dc logs caddy`. Ports 80 and 443 must be open in the Hetzner firewall,

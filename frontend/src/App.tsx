@@ -9,6 +9,7 @@ import { LoginPage } from './pages/LoginPage'
 import { AdminPage } from './pages/AdminPage'
 import { AdminModsPage } from './pages/AdminModsPage'
 import { AdminAuricPage } from './pages/AdminAuricPage'
+import { AdminRelaysPage } from './pages/AdminRelaysPage'
 import { SoundEffects } from './components/SoundEffects'
 import { AuthProvider } from './context/AuthContext'
 import { RequireRole } from './components/RequireRole'
@@ -53,6 +54,14 @@ function App() {
                     element={
                       <RequireRole roles={['admin']}>
                         <AdminAuricPage />
+                      </RequireRole>
+                    }
+                  />
+                  <Route
+                    path="/admin/relays"
+                    element={
+                      <RequireRole roles={['admin']}>
+                        <AdminRelaysPage />
                       </RequireRole>
                     }
                   />

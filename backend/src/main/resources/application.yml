@@ -39,3 +39,10 @@ app:
     login:
       enabled: ${RATE_LIMIT_LOGIN_ENABLED:true}
       max-per-minute: ${RATE_LIMIT_LOGIN_PER_MINUTE:5}
+    # Joining a relay session (guessing its password), per IP address
+    relay-join:
+      max-per-minute: ${RATE_LIMIT_RELAY_JOIN_PER_MINUTE:10}
+  relay:
+    # Shared with the relay servers; signs tickets. At least 32 random bytes, e.g. `openssl rand -hex 32`.
+    # Empty: the relay session endpoints answer 503 and everything else works.
+    ticket-secret: ${RELAY_TICKET_SECRET:}

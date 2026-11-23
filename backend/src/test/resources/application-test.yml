@@ -19,3 +19,5 @@ app:
   rate-limit:
     login:
       enabled: false
+  relay:
+    ticket-secret: test-ticket-secret-0123456789abcdefghij

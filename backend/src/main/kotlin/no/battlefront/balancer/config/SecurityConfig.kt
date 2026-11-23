@@ -35,7 +35,8 @@ import org.springframework.security.web.util.matcher.RequestMatcher
  * Login rate limiting is applied before authentication.
  *
  * The approved mods list (GET /api/mods/approved) and Auric version info (GET /api/auric/version) are public too, and
- * also allowed with a host token so Auric hosts can send their token on every call.
+ * also allowed with a host token so Auric hosts can send their token on every call. The same goes for the relay list,
+ * the relay session list and joining a session; creating, updating and ending a relay session needs a host token.
  *
  * Auric hosts authenticate with `Authorization: Bearer <token>` instead of a session. Those requests are handled
  * by a separate, stateless chain ([hostTokenFilterChain]) that only allows the host endpoints.
@@ -104,9 +105,26 @@ class SecurityConfig {
                 auth
                     .requestMatchers("/error")
                     .permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/players", "/api/players/by-persona", "/api/mods/approved", "/api/auric/version")
+                    .requestMatchers(
+                        HttpMethod.GET,
+                        "/api/players",
+                        "/api/players/by-persona",
+                        "/api/mods/approved",
+                        "/api/auric/version",
+                        "/api/relays",
+                        "/api/relay/sessions",
+                    ).hasAuthority(HostTokenAuthenticationFilter.ROLE_HOST)
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/balance",
+                        "/api/player-requests",
+                        "/api/matches/raw",
+                        "/api/relay/sessions",
+                        "/api/relay/sessions/*/join",
+                    ).hasAuthority(HostTokenAuthenticationFilter.ROLE_HOST)
+                    .requestMatchers(HttpMethod.PUT, "/api/relay/sessions/*")
                     .hasAuthority(HostTokenAuthenticationFilter.ROLE_HOST)
-                    .requestMatchers(HttpMethod.POST, "/api/balance", "/api/player-requests", "/api/matches/raw")
+                    .requestMatchers(HttpMethod.DELETE, "/api/relay/sessions/*")
                     .hasAuthority(HostTokenAuthenticationFilter.ROLE_HOST)
                     .anyRequest()
                     .denyAll()
@@ -158,6 +176,8 @@ class SecurityConfig {
                         "/api/matches/*",
                         "/api/mods/approved",
                         "/api/auric/version",
+                        "/api/relays",
+                        "/api/relay/sessions",
                     ).permitAll()
                     .requestMatchers(
                         HttpMethod.POST,
@@ -167,6 +187,7 @@ class SecurityConfig {
                         "/api/login/2fa/setup/confirm",
                         "/api/logout",
                         "/api/balance",
+                        "/api/relay/sessions/*/join",
                     ).permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/admin/**")
                     .hasAuthority("ROLE_admin")
@@ -174,8 +195,13 @@ class SecurityConfig {
                     .hasAuthority("ROLE_admin")
                     .requestMatchers(HttpMethod.PUT, "/api/admin/**")
                     .hasAuthority("ROLE_admin")
-                    .requestMatchers(HttpMethod.DELETE, "/api/admin/users/*", "/api/admin/host-tokens/*", "/api/admin/mods/*")
-                    .hasAuthority("ROLE_admin")
+                    .requestMatchers(
+                        HttpMethod.DELETE,
+                        "/api/admin/users/*",
+                        "/api/admin/host-tokens/*",
+                        "/api/admin/mods/*",
+                        "/api/admin/relays/*",
+                    ).hasAuthority("ROLE_admin")
                     .requestMatchers(HttpMethod.GET, "/api/randomizer/weights")
                     .hasAuthority("ROLE_admin")
                     .requestMatchers(HttpMethod.PUT, "/api/randomizer/weights")

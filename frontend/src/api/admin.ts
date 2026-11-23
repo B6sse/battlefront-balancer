@@ -176,3 +176,41 @@ export function getAuricVersion(): Promise<AuricVersionSettings> {
 export function saveAuricVersion(settings: Omit<AuricVersionSettings, 'updatedAt'>): Promise<AuricVersionSettings> {
   return send<AuricVersionSettings>('/admin/auric-version', 'PUT', settings, 'Failed to save Auric version')
 }
+
+/** A relay server as admins see it (GET /api/admin/relays), including inactive ones. */
+export interface RelayAdminDto {
+  id: string
+  region: string
+  name: string
+  host: string
+  port: number
+  active: boolean
+  /** Game servers currently running through this relay */
+  liveSessions: number
+}
+
+/** Body for creating or replacing a relay. `id` is only used when creating; `active` omitted keeps the current state. */
+export interface RelayRequest {
+  id?: string
+  region: string
+  name: string
+  host: string
+  port: number | null
+  active?: boolean
+}
+
+export function getRelays(): Promise<RelayAdminDto[]> {
+  return send<RelayAdminDto[]>('/admin/relays', 'GET', undefined, 'Failed to load relays')
+}
+
+export function createRelay(relay: RelayRequest): Promise<RelayAdminDto> {
+  return send<RelayAdminDto>('/admin/relays', 'POST', relay, 'Failed to add relay')
+}
+
+export function updateRelay(id: string, relay: RelayRequest): Promise<RelayAdminDto> {
+  return send<RelayAdminDto>(`/admin/relays/${encodeURIComponent(id)}`, 'PUT', relay, 'Failed to save relay')
+}
+
+export function deleteRelay(id: string): Promise<void> {
+  return send<void>(`/admin/relays/${encodeURIComponent(id)}`, 'DELETE', undefined, 'Failed to delete relay')
+}
